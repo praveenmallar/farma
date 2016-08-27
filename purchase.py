@@ -5,6 +5,7 @@ import calpicker
 import tkMessageBox
 import printer as printbill
 import shelve
+import datetime as dt
 
 class addStock(Frame):
 
@@ -151,6 +152,7 @@ class addStock(Frame):
 			billid=cur.lastrowid
 			billtotal=0
 			printout=["","","PURCHASE","",stockist,"bill: "+billno,""]
+			printout.append("{0:15s}{1:4s}{2:8s}{3:8s}{4:6s}{5:4s}{6:5}".format("drug","count","rate","mrp","date","stock","sale"))
 			for f in self.items:
 				drug=f.drug.get()
 				batch=f.batch.get()
@@ -165,15 +167,15 @@ class addStock(Frame):
 				sql="select sum(stock.cur_count) from stock where stock.drug_id=%s and stock.expiry> curdate();"
 				cur.execute(sql,(drugid))
 				r=cur.fetchone()
-				existing_stock=str(r[0])
+				existing_stock=r[0]
 				sql="select sum(sale.count) from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where bill.date> date_add(curdate(), interval -1 month) and stock.drug_id=%s;"
 				cur.execute(sql,(drugid))
 				r=cur.fetchone()
-				lastmonth_sale=str(r[0])
+				lastmonth_sale=r[0]
 				sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, tax,discount,terminate) values('"+batch+ "',str_to_date('"+expiry+"','%d-%b-%y'),"+str(count)+","+str(count)+","+str(drugid) +","+str(mrp) +","+ str(billid) +","+ str(rate) +",0,0,0)"
 				cur.execute(sql)
 				billtotal=billtotal+count*rate
-				printout.append(drug+ " b:"+batch+" ("+str(count)+")@"+str(rate)+" mrp:"+str(mrp)+" x:"+expiry+ " o/c:"+existing_stock+" o/s:"+lastmonth_sale)
+				printout.append("{0:15.15s}-{1:4d}-{2:7.2f}-{3:7.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
 			db.commit()
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])

@@ -13,8 +13,10 @@ class drugComp(Frame):
 		Frame.__init__(self,parent)	
 		self.c1=comp.myComp2(self,listitems,listheight,**kwargs)
 		self.l1=Label(self,width=5)
+		self.l2=Label(self,width=8)
 		self.c1.pack(side=LEFT)
-		self.l1.pack(side=LEFT)
+		self.l1.pack(pady=10)
+		self.l2.pack()
 		self.pack()
 		self.c1.bind("<<listChanged>>",self.textchanged)
 		
@@ -22,6 +24,12 @@ class drugComp(Frame):
 		text=self.c1.get()
 		if text:		
 			self.l1.config(text=text[1])
+		if text[4]!=None and ((text[1]<text[4]/5) or int(text[1]<2)):
+			self.l1.config(fg="red")
+			self.l2.config(text=str(text[4]))
+		else:
+			self.l1.config(fg="black")
+			self.l2.config(text="")
 	def get(self):
 		ret=self.c1.get()
 		if ret: return ret
@@ -133,7 +141,7 @@ class Bill(Frame):
 			pass
 		db=cdb.Db().connection()
 		cursor=db.cursor()
-		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price) as price from drug join stock on drug.id=stock.drug_id where stock.expiry>curdate()+ interval 20 day and stock.cur_count>0 group by drug.id order by drug.name;"
+		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price) as price ,saletable.last_month_sale from drug join stock on drug.id=stock.drug_id left join (select sum(sale.count) as last_month_sale, stock.drug_id as drugid from sale join stock on sale.stock=stock.id join bill on sale.bill=bill.id where bill.date>curdate() - interval 30 day group by drugid)saletable on drug.id=saletable.drugid  where stock.expiry>curdate()+ interval 20 day and stock.cur_count>0  group by drug.id order by drug.name;"
 		cursor.execute(sql)
 		rows=cursor.fetchall()
 		stock=[]
