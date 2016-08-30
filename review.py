@@ -3,6 +3,7 @@ import printer
 import comp
 import connectdb as cdb
 import tkMessageBox as tmb
+import calpicker as cp
 
 class Review (Frame):
 	def __init__(self,parent=None,status=0):
@@ -64,26 +65,53 @@ class Review (Frame):
 			cur.execute("select name from doc order by name;")
 			rows=cur.fetchall()
 			lb=Listbox(fr,selectmode=SINGLE)
+			lb.config(exportselection=False)
 			lb.pack()
 			lb.insert(END,"")
 			for r in rows:
 				lb.insert(END,r[0])
 			lb.selection_set(0)
-			b.config(command=lambda x=v1,y=v2,z=lb:self.showSale("bills",x,y,z))
+			aggr=StringVar()
+			aggr.set("")
+			Radiobutton(fr,text="Aggregate by doctor",value="doctor",variable=aggr).pack()
+			frr=Frame(fr,bd=1,relief=RIDGE)
+			frr.pack(pady=5)
+			Radiobutton(frr,text="Aggregate by date",value="date",variable=aggr).pack()
+			Label(frr,text="from").pack(side=LEFT)
+			cb1=cp.Calbutton(frr)
+			cb1.pack(side=LEFT)
+			Label(frr,text="to").pack(side=LEFT)
+			cb2=cp.Calbutton(frr)
+			cb2.pack(side=LEFT)
+			b.config(command=lambda x=v1,y=v2,z=lb,a=aggr,d1=cb1,d2=cb2:self.showSale("bills",x,y,z,a,d1,d2))
 			
 	
 	def showSale(self,mode,*args):
 		if mode=="bills":
 			v1=args[0].get()
 			v2=args[1].get()
-			v3=args[2]
+			v3=args[2]			
 			v3=v3.get(v3.curselection())
-			if len(v3.strip())>0:
-				docstring=" and doc.name= '"+v3+"' "
-			else :
-				docstring=""
-			sql="select bill.id, bill.name as patient, doc.name as doc, bill.date, bill.net from bill join doc on bill.doc=doc.id where bill.id>="+str(v1)+" and bill.id<="+str(v2)+docstring+" order by bill.id;"
-			format="{:<6d} {:15.14s} {:12.10s} {:%d-%b,%y} {:8.2f}"
+			aggr=args[3].get()
+			if aggr=="doctor":
+				sql="select doc.name, sum(bill.net), count(bill.id) from bill join doc on bill.doc=doc.id where bill.id>="+str(v1)+\
+					" and bill.id <="+str(v2) +" group by doc.id order by doc.name;"
+				format="{:15.14s}  - {:12.2f} ({:5d})"
+			elif aggr=="date":
+				d1=args[4].get()
+				d2=args[5].get()
+				sql="select bill.date,sum(bill.net),count(bill.id) from bill where "\
+					"bill.date>=str_to_date('"+d1+"','%d-%b-%y') and bill.date<=str_to_date('"+d2+ "','%d-%b-%y')"\
+					" group by bill.date;"
+				format="{:%d-%b,%y}  {:12.2f} ({:5d})"
+			else:
+				if len(v3.strip())>0:
+					docstring=" and doc.name= '"+v3+"' "
+				else :
+					docstring=""
+				sql="select bill.id, bill.name as patient, doc.name as doc, bill.date, bill.net from bill join doc on bill.doc=doc.id "\
+					"where bill.id>="+str(v1)+" and bill.id<="+str(v2)+docstring+" order by bill.id;"
+				format="{:<6d} {:15.14s} {:12.10s} {:%d-%b,%y} {:8.2f}"
 			self.fillCanvas(sql,format)
 			
 
