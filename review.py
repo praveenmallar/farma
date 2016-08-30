@@ -58,17 +58,36 @@ class Review (Frame):
 			comp.NumEntry(frr,textvariable=v1,width=8).pack(side=LEFT)
 			Label(frr,text="To").pack(side=LEFT)
 			comp.NumEntry(frr,textvariable=v2,width=8).pack(side=LEFT)
-			Button(frr,text="Show",command=lambda x=v1,y=v2:self.showSale("bills",x,y)).pack(side=LEFT)
+			b=Button(frr,text="Show")
+			b.pack(side=LEFT)
+			cur=cdb.Db().connection().cursor()
+			cur.execute("select name from doc order by name;")
+			rows=cur.fetchall()
+			lb=Listbox(fr,selectmode=SINGLE)
+			lb.pack()
+			lb.insert(END,"")
+			for r in rows:
+				lb.insert(END,r[0])
+			lb.selection_set(0)
+			b.config(command=lambda x=v1,y=v2,z=lb:self.showSale("bills",x,y,z))
+			
 	
 	def showSale(self,mode,*args):
 		if mode=="bills":
 			v1=args[0].get()
 			v2=args[1].get()
-			sql="select bill.id, bill.name as patient, doc.name as doc, bill.date, bill.net from bill join doc on bill.doc=doc.id where bill.id>="+str(v1)+" and bill.id<="+str(v2)+" order by bill.id;"
-			self.fillCanvas(sql)
+			v3=args[2]
+			v3=v3.get(v3.curselection())
+			if len(v3.strip())>0:
+				docstring=" and doc.name= '"+v3+"' "
+			else :
+				docstring=""
+			sql="select bill.id, bill.name as patient, doc.name as doc, bill.date, bill.net from bill join doc on bill.doc=doc.id where bill.id>="+str(v1)+" and bill.id<="+str(v2)+docstring+" order by bill.id;"
+			format="{:<6d} {:15.14s} {:12.10s} {:%d-%b,%y} {:8.2f}"
+			self.fillCanvas(sql,format)
 			
 
-	def fillCanvas(self,sql):
+	def fillCanvas(self,sql,fmt):
 		self.canvas.delete(ALL)
 		con=cdb.Db().connection()
 		cur=con.cursor()
@@ -76,14 +95,14 @@ class Review (Frame):
 			cur.execute(sql)
 			rows=cur.fetchall()
 		except:
-			tmb.showerror("Error","check for values")
+			tmb.showerror("Error","check for values",parent=self.master)
 			return
 		i=0
 		self.lines=[]
 		for row in rows:
-			line=", ".join([str(s) for s in row])
+			line=fmt.format(*row)
 			self.lines.append(line)
-			self.canvas.create_text(2,5+i*20,text=line,anchor=NW)
+			self.canvas.create_text(2,5+i*20,text=line,anchor=NW,font=("FreeMono",10))
 			i+=1
 		self.canvas.config(scrollregion=self.canvas.bbox(ALL))
 
