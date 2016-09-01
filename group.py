@@ -1,6 +1,7 @@
 from Tkinter import *
 import comp
 import connectdb as cdb
+import tkMessageBox as tmb
 
 class Group(Frame):
 	def __init__(self,parent=None):
@@ -26,6 +27,8 @@ class Group(Frame):
 		Button(f,text=">>",command=self.remove).pack(pady=20)
 
 		self.groups.bind("<<listChanged>>",self.loadgroupdrugs)
+		self.druggroup.bind("<<doubleClicked>>",self.remove)
+		self.drugs.bind("<<doubleClicked>>",self.add)
 		
 		self.loadgroups()
 		self.loaddrugs()
@@ -44,15 +47,47 @@ class Group(Frame):
 		self.groups.see(index)	
 
 	def loaddrugs(self):
-		pass
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select * from drug order by name;")
+		rows=cur.fetchall()
+		items=[]
+		for r in rows:
+			items.append([r[1],r[0]])
+		self.drugs.changelist(items)
+		
+	def loadgroupdrugs(self,e=None):
+		group=self.groups.get()[1]
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select drug.name,drug.id,druggroup.groupid,groups.name from drug join druggroup on druggroup.drug=drug.id "\
+			" join groups on druggroup.groupid=groups.id where druggroup.groupid=%s;",(group))
+		rows=cur.fetchall()
+		items=[]
+		for r in rows:
+			items.append([r[0],[r[1],r[2],r[0],r[3]]])
+		self.druggroup.changelist(items)
 
-	def loadgroupdrugs(self):
-		pass
+	def add(self,e=None):
+		group=self.groups.get()[1]
+		drug=self.drugs.get()[1]
+		con=cdb.Db().connection()
+		cur=con.cursor()
+		cur.execute("insert into druggroup(groupid,drug) values(%s,%s);",(group,drug))
+		con.commit()
+		self.loadgroups()
 
-	def add(self):
-		pass
-	def remove(self):
-		pass
+	def remove(self,e=None):
+		druggroup=self.druggroup.get()[1]
+		drugid=druggroup[0]
+		groupid=druggroup[1]
+		drug=druggroup[2]
+		group=druggroup[3]
+		if not tmb.askyesno("Confirm","Remove {} from {}?".format(drug,group),parent=self.master):
+			return
+		con=cdb.Db().connection()
+		cur=con.cursor()
+		cur.execute("delete from druggroup where drug=%s and groupid=%s;",(drugid,groupid))
+		con.commit()
+		self.loadgroupdrugs()
 
 if __name__=="__main__":
 	g=Group()

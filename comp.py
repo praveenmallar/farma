@@ -33,7 +33,7 @@ class myComp(Frame):
 		for item in self.listitems:
 			if text in item:
 				newlist.append(item)
-		if len(newlist)==0:
+		if len(self.listitems)>0 and len(newlist)==0:
 			return False
 		else:
 			self.list.delete(0,END)
