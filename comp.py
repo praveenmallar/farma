@@ -22,6 +22,7 @@ class myComp(Frame):
 		self.entr.bind("<Key>",self.moveselection)
 		self.list.bind("<FocusIn>",self.lbfocus)
 		self.list.bind("<<ListboxSelect>>",self.listchanged)
+		self.list.bind("<Double-Button-1>",lambda x=None : self.event_generate("<<doubleClicked>>"))
 		key=Event()
 		key.keysym="Up"
 		self.moveselection(key)		
@@ -49,7 +50,6 @@ class myComp(Frame):
 
 	def index(self):
 		return self.listitems.index(self.get())
-			
 	
 	def get(self):
 		try:
