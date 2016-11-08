@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from Tkinter import *
-import bill,purchase,cancel,new,patient,showbills,password,editstock,review,creditnote
+import bill,purchase,cancel,new,patient,showbills,password,editstock,review,creditnote,group
 import printer as printbill
 import shelve
 import datetime as dt
@@ -13,6 +13,7 @@ class Pharma():
 
 	def __init__(self):
 		self.master=Tk()
+		self.checkdb()
 		self.master.config(width=600,height=400)
 		self.master.title("Mukunda Pharmacy")
 		self.addmenus()
@@ -73,6 +74,7 @@ class Pharma():
 		viewmenu.add_command(label="print stockists list", command=self.liststockists)
 		viewmenu.add_command(label="review bills",command=self.reviewbills)
 		viewmenu.add_command(label="enter credit note",command=lambda:creditnote.CreditNote())
+		viewmenu.add_command(label="group drugs",command=lambda:group.Group())
 		menu.add_cascade(label="View",menu=viewmenu)
 
 		adminmenu=Menu(menu,tearoff=0)
@@ -208,6 +210,14 @@ class Pharma():
 	def dbparams(self):
 		if password.askpass("admin"):
 			win=cdb.DbVariables()
+	
+	def checkdb(self):
+		try:
+			db=cdb.Db()
+			d=db.connection()
+		except:
+			a=cdb.DbVariables()
+			a.wait_window()
 
 if __name__=="__main__":
 	Pharma()

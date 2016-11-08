@@ -100,10 +100,10 @@ class Review (Frame):
 			elif aggr=="date":
 				d1=args[4].get()
 				d2=args[5].get()
-				sql="select bill.date,sum(bill.net),count(bill.id) from bill where "\
+				sql="select bill.date,sum(bill.net),min(bill.id),count(bill.id) from bill where "\
 					"bill.date>=str_to_date('"+d1+"','%d-%b-%y') and bill.date<=str_to_date('"+d2+ "','%d-%b-%y')"\
 					" group by bill.date;"
-				format="{:%d-%b,%y}  {:12.2f} ({:5d})"
+				format="{:%d-%b,%y}  {:12.2f} {:8d}({:5d})"
 			else:
 				if len(v3.strip())>0:
 					docstring=" and doc.name= '"+v3+"' "

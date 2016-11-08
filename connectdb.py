@@ -55,7 +55,17 @@ class DbVariables(Frame):
 			sh[k]=self.hash[k].get()
 		self.parent.destroy()
 
+def checkdb():
+	try:
+		db=Db()
+		d=db.connection()
+	except:
+		t=Tk()
+		a=DbVariables(t)
+		t.mainloop()	
+	
+
 if __name__=="__main__":
-	a=DbVariables()
-	a.mainloop()	
+	
+	checkdb()	
 
