@@ -7,6 +7,7 @@ import datetime as dt
 from PIL import Image, ImageTk
 import tkMessageBox
 import connectdb as cdb
+from bill import print_day_bills as print_daybills
 
 
 class Pharma():
@@ -67,6 +68,7 @@ class Pharma():
 		repmenu=Menu(menu,tearoff=0)
 		repmenu.add_command(label="Day Report",command=self.dayreport)
 		repmenu.add_command(label="Last Month Report",command=self.monthreport)
+		repmenu.add_command(label="Print day bills (yesterday)",command=self.print_day_bills)
 		menu.add_cascade(label="Report",menu=repmenu)
 
 		viewmenu=Menu(menu,tearoff=0)
@@ -218,6 +220,12 @@ class Pharma():
 		except:
 			a=cdb.DbVariables()
 			a.wait_window()
+	
+	def print_day_bills(self):
+		if not password.askpass():
+			return
+		d=dt.date.today()-dt.timedelta(days=1)
+		print_daybills(d)
 
 if __name__=="__main__":
 	Pharma()

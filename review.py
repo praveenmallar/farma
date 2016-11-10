@@ -4,6 +4,7 @@ import comp
 import connectdb as cdb
 import tkMessageBox as tmb
 import calpicker as cp
+import tkFileDialog as tfd
 
 class Review (Frame):
 	def __init__(self,parent=None,status=0):
@@ -41,6 +42,7 @@ class Review (Frame):
 
 		if self.status=="admin":
 			Button(self.f1,text="Print",command=self.printlines).pack(side=RIGHT)
+			Button(self.f1,text="Save",command=self.savelines).pack(side=RIGHT)
 
 	def showOptions(self,selection):
 		f=self.f2
@@ -100,10 +102,10 @@ class Review (Frame):
 			elif aggr=="date":
 				d1=args[4].get()
 				d2=args[5].get()
-				sql="select bill.date,sum(bill.net),min(bill.id),count(bill.id) from bill where "\
+				sql="select bill.date,sum(bill.net),min(bill.id),max(bill.id) from bill where "\
 					"bill.date>=str_to_date('"+d1+"','%d-%b-%y') and bill.date<=str_to_date('"+d2+ "','%d-%b-%y')"\
 					" group by bill.date;"
-				format="{:%d-%b,%y}  {:12.2f} {:8d}({:5d})"
+				format="{:%d-%b,%y}  {:12.2f} {:8d}-{:8d}"
 			else:
 				if len(v3.strip())>0:
 					docstring=" and doc.name= '"+v3+"' "
@@ -127,16 +129,27 @@ class Review (Frame):
 			return
 		i=0
 		self.lines=[]
+		self.csv=[]
 		for row in rows:
 			line=fmt.format(*row)
 			self.lines.append(line)
+			self.csv.append(row)
 			self.canvas.create_text(2,5+i*20,text=line,anchor=NW,font=("FreeMono",10))
 			i+=1
 		self.canvas.config(scrollregion=self.canvas.bbox(ALL))
 
 	def printlines(self):
 		printer.printinfo(self.lines)
-			
+	
+	def savelines(self):
+		filename=tfd.asksaveasfilename(parent=self.master,title="Select file to save",initialdir="./saved")
+		if not filename:
+			return		
+		fil=open(filename,'w')
+		for l in self.csv:
+			print l
+			l=map(str,l)
+			fil.write(','.join(l)+"\r\n")
 	
 if __name__=="__main__":
 	a=Review()

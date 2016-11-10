@@ -4,6 +4,7 @@ import comp
 import tkMessageBox
 import printer as printbill
 import shelve
+from bill import sell_rate
 
 class Cancel(Frame):
 		
@@ -49,7 +50,7 @@ class Cancel(Frame):
 		self.items=[]
 		db=cdb.Db().connection()
 		cur=db.cursor(cdb.dictcursor)
-		sql="select drug.name,sale.id,sale.count,stock.price,bill.name as patient,bill.total,bill.date from bill join sale on bill.id=sale.bill join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id where bill.id=%s;"
+		sql="select drug.name,sale.id,sale.count,stock.price,stock.discount,stock.tax,bill.name as patient,bill.net as total,bill.date from bill join sale on bill.id=sale.bill join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id where bill.id=%s;"
 		cur.execute(sql,(str(self.curbill)))	
 		rows=cur.fetchall()
 		if len(rows)==0:
@@ -70,7 +71,7 @@ class Cancel(Frame):
 			f.count.set(f.oldcount)
 			comp.NumEntry(f,textvariable=f.count,width=5).pack(side=LEFT,padx=10,pady=10)
 			f.id=row['id']
-			f.price=row['price']
+			f.price=sell_rate(row['price'],row['discount'],row['tax'])
 			self.canvas.create_window(1,1+i*40,window=f,anchor=NW)
 			i=i+1
 			self.items.append(f)
@@ -120,7 +121,7 @@ class Cancel(Frame):
 					billreturn=sh['return']
 				except:
 					billreturn=0
-				sh['return']=billreturn+returnamount
+				sh['return']=float(billreturn)+float(returnamount)
 			else:
 				tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill",parent=self.master)
 
@@ -171,7 +172,7 @@ class Cancel(Frame):
 					billreturn=sh['return']
 				except:
 					billreturn=0
-				sh['return']=billreturn+returnamount			
+				sh['return']=float(billreturn)+float(returnamount)			
 			else:
 				tkMessageBox.showinfo("Bill Cancelled","Refund only if bill is not IP",parent=self.master)
 			
@@ -213,8 +214,8 @@ class Cancel(Frame):
 			rows=cur.fetchall()
 			items=[]
 			for r in rows:
-				price=r[8] +r[8]*r[9]/100 -r[8]*r[10]/100
-				item=(r[4]+" ("+str(r[5])+") -"+str(r[6]),r[5]*price)
+				price=sell_rate(r[8],r[10],r[9])
+				item=(r[4]+" ("+str(r[5])+") -"+str(r[6]),r[5]*price,r[7])
 				items.append(item)
 			sql="select patient.name from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where bill.id=%s and patient.discharged=0;"
 			ip=None
@@ -223,7 +224,7 @@ class Cancel(Frame):
 				r=cur.fetchone()
 				f=r[0].split("::")
 				ip=f[0]
-			biller={"billno":str(billno)+ "  DUCPLICATE BILL","patient":patient,"doc":doc,"date":date,"total":total,"items":items,"ip":ip}
+			biller={"billno":str(billno)+ "  COPY","patient":patient,"doc":doc,"date":date,"total":total,"items":items,"ip":ip}
 		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['items'],biller['ip'])
 		
 if __name__=="__main__":

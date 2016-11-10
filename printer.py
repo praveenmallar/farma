@@ -81,7 +81,7 @@ class printer:
 		f.write	(output)
 		f.close()
 
-def printbill(billno,patient,doc,date,total,items,ip=None,selfbill=0):
+def printbill(billno,patient,doc,date,total,items,discount=0,ip=None,selfbill=0):
 	p=printer()
 	if selfbill==1:
 		p.text("selfbill")
@@ -103,7 +103,7 @@ def printbill(billno,patient,doc,date,total,items,ip=None,selfbill=0):
 	p.text("date: "+str(date))
 	p.blank(1)
 	for item in items:
-		p.text('  {:30s}{:7.2f}'.format(item[0],item[1]))		
+		p.text('  {:24.24s}:{:%b%y} {:7.2f}'.format(item[0],item[2],item[1]))		
 	p.blank(1)
 	blanklines=5-len(items)
 	if blanklines>0:
@@ -111,10 +111,13 @@ def printbill(billno,patient,doc,date,total,items,ip=None,selfbill=0):
 	p.bold()
 	p.text('  {:30s}{:7.2f}'.format("TOTAL: ",total))
 	p.no_bold()
+	if discount>0:
+		p.blank(1)
+		p.text('  {:30s}{:7.2f}'.format("discount:",discount))
 	p.blank(2)
 	p.align_right()	
-	p.text('{:15s}'.format("pharmacist"))
-	p.blank(2)	
+	p.text('{:>35s}'.format("pharmacist"))
+	p.blank(4)	
 	p.cut()
 	p.toprinter()
 	

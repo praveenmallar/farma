@@ -6,6 +6,7 @@ import tkMessageBox
 import printer as printbill
 import shelve
 import datetime as dt
+from bill import sell_rate
 
 class addStock(Frame):
 
@@ -65,6 +66,14 @@ class addStock(Frame):
 		Label(f2,text="MRP",font=myfont).pack(side=LEFT)
 		self.mrp=comp.NumEntry(f2,width=10)
 		self.mrp.pack(side=LEFT)
+		Label(f2,text="Discount",font=myfont).pack(side=LEFT)
+		self.disc=DoubleVar()
+		comp.NumEntry(f2,width=10,textvariable=self.disc).pack(side=LEFT)
+		self.disc.set(0)
+		Label(f2,text="Tax",font=myfont).pack(side=LEFT)
+		self.tax=DoubleVar()
+		comp.NumEntry(f2,width=10,textvariable=self.tax).pack(side=LEFT)
+		self.tax.set(0)
 		Label(f2,text="Expiry",font=myfont).pack(side=LEFT)
 		self.expiry=calpicker.Calbutton(f2,width=14)
 		self.expiry.pack(side=LEFT)
@@ -90,24 +99,22 @@ class addStock(Frame):
 
 	def addstock(self,event=None):
 		f=Frame(self.f3,bd=1,relief=RIDGE)
-		f.drug=StringVar()
-		f.drug.set(self.drug.get())
-		Label(f,width=20,height=1,textvariable=f.drug).pack(side=LEFT)
-		f.batch=StringVar()
-		f.batch.set(self.batch.get())		
-		Label(f,width=10,height=1,textvariable=f.batch).pack(side=LEFT)
-		f.count=IntVar()
-		f.count.set(int(self.count.get()))
-		Label(f,width=5,height=1,textvariable=f.count).pack(side=LEFT)
-		f.rate=DoubleVar()
-		f.rate.set(float(self.rate.get()))
-		Label(f,width=8,height=1,textvariable=f.rate).pack(side=LEFT)
-		f.mrp=DoubleVar()
-		f.mrp.set(float(self.mrp.get()))
-		Label(f,width=8,height=1,textvariable=f.mrp).pack(side=LEFT)
-		f.expiry=StringVar()
-		f.expiry.set(self.expiry.get())
-		Label(f,width=8,height=1,textvariable=f.expiry).pack(side=LEFT)
+		f.drug=self.drug.get()
+		Label(f,width=20,height=1,text=f.drug).pack(side=LEFT)
+		f.batch=self.batch.get()		
+		Label(f,width=10,height=1,text=f.batch).pack(side=LEFT)
+		f.count=int(self.count.get())
+		Label(f,width=5,height=1,text=f.count).pack(side=LEFT)
+		f.rate=float(self.rate.get())
+		Label(f,width=8,height=1,text=f.rate).pack(side=LEFT)
+		f.mrp=float(self.mrp.get())
+		Label(f,width=8,height=1,text=f.mrp).pack(side=LEFT)
+		f.disc=float(self.disc.get())
+		Label(f,width=8,height=1,text=f.disc).pack(side=LEFT)
+		f.tax=float(self.tax.get())
+		Label(f,width=8,height=1,text=f.tax).pack(side=LEFT)
+		f.expiry=self.expiry.get()
+		Label(f,width=8,height=1,text=f.expiry).pack(side=LEFT)
 		b=Button(f,text="remove")
 		b.config(command=lambda: self.removeframe(b))		
 		b.pack(side=LEFT)	
@@ -118,6 +125,8 @@ class addStock(Frame):
 		self.count.delete(0,END)
 		self.rate.delete(0,END)
 		self.mrp.delete(0,END)
+		self.disc.set(0)
+		self.tax.set(0)
 		self.drug.focus()
 
 	def refreshcanvas(self):
@@ -152,14 +161,17 @@ class addStock(Frame):
 			billid=cur.lastrowid
 			billtotal=0
 			printout=["","","PURCHASE","",stockist,"bill: "+billno,""]
-			printout.append("{0:15s}{1:4s}{2:8s}{3:8s}{4:6s}{5:4s}{6:5}".format("drug","count","rate","mrp","date","stock","sale"))
+			printout.append("{0:12s}{1:4s}{2:8s}{3:8s}{4:6s}{5:4s}{6:5}".format("drug","ct","rate","mrp","exp","stk","sl"))
 			for f in self.items:
-				drug=f.drug.get()
-				batch=f.batch.get()
-				count=f.count.get()
-				rate=f.rate.get()
-				mrp=f.mrp.get()
-				expiry=f.expiry.get()
+				drug=f.drug
+				batch=f.batch
+				count=f.count
+				rate=f.rate
+				mrp=f.mrp
+				disc=f.disc
+				tax=f.tax
+				expiry=f.expiry
+				print expiry
 				dsql="select id from drug where name='"+drug+"';"
 				cur.execute(dsql)
 				row=cur.fetchone()
@@ -172,10 +184,12 @@ class addStock(Frame):
 				cur.execute(sql,(drugid))
 				r=cur.fetchone()
 				lastmonth_sale=r[0]
-				sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, tax,discount,terminate) values('"+batch+ "',str_to_date('"+expiry+"','%d-%b-%y'),"+str(count)+","+str(count)+","+str(drugid) +","+str(mrp) +","+ str(billid) +","+ str(rate) +",0,0,0)"
-				cur.execute(sql)
+				sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, tax,discount,terminate) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,0)"
+				print sql
+				cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,tax,disc))
 				billtotal=billtotal+count*rate
-				printout.append("{0:15.15s}-{1:4d}-{2:7.2f}-{3:7.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
+				sell_mrp=sell_rate(mrp,disc,tax)
+				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(sell_mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
 			db.commit()
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])
