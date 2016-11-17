@@ -4,7 +4,6 @@ import bill,purchase,cancel,new,patient,showbills,password,editstock,review,cred
 import printer as printbill
 import shelve
 import datetime as dt
-from PIL import Image, ImageTk
 import tkMessageBox
 import connectdb as cdb
 from bill import print_day_bills as print_daybills
@@ -27,28 +26,23 @@ class Pharma():
 	def addshortcuts(self):
 		f=Frame(self.master,bd=1,relief=SUNKEN)
 		f.pack()
-		image=Image.open("./images/bill.png")
-		photo=ImageTk.PhotoImage(image)
+		photo=PhotoImage(file="./images/bill.png")
 		b=Button(f,image=photo,text="bill",compound=BOTTOM,width=100,height=100,command=lambda:bill.Bill())
 		b.pack(side=LEFT)
 		b.image=photo
-		image=Image.open("./images/purchase.png")
-		photo=ImageTk.PhotoImage(image)
+		photo=PhotoImage(file="./images/purchase.png")
 		b=Button(f,image=photo,text="purchase",compound=BOTTOM,width=100,height=100,command=lambda:purchase.addStock())
 		b.pack(side=LEFT)
 		b.image=photo
-		image=Image.open("./images/return.png")
-		photo=ImageTk.PhotoImage(image)
+		photo=PhotoImage(file="./images/return.png")
 		b=Button(f,image=photo,text="cancel",compound=BOTTOM,width=100,height=100,command=lambda:cancel.Cancel())
 		b.pack(side=LEFT)
 		b.image=photo
-		image=Image.open("./images/new.png")
-		photo=ImageTk.PhotoImage(image)
+		photo=PhotoImage(file="./images/new.png")
 		b=Button(f,image=photo,text="new",compound=BOTTOM,width=100,height=100,command=lambda:new.adder())
 		b.pack(side=LEFT)
 		b.image=photo
-		image=Image.open("./images/patient.png")
-		photo=ImageTk.PhotoImage(image)
+		photo=PhotoImage(file="./images/patient.png")
 		b=Button(f,image=photo,text="patient",compound=BOTTOM,width=100,height=100,command=lambda:patient.Patient())
 		b.pack(side=LEFT)
 		b.image=photo

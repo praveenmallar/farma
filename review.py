@@ -5,6 +5,7 @@ import connectdb as cdb
 import tkMessageBox as tmb
 import calpicker as cp
 import tkFileDialog as tfd
+import datetime as dt
 
 class Review (Frame):
 	def __init__(self,parent=None,status=0):
@@ -39,6 +40,7 @@ class Review (Frame):
 
 	def packoptions(self):
 		Button(self.f1,text="Sale",command=lambda:self.showOptions("sale")).pack(side=LEFT)
+		Button(self.f1,text="Stock",command=lambda:self.showOptions("stock")).pack(side=LEFT)
 
 		if self.status=="admin":
 			Button(self.f1,text="Print",command=self.printlines).pack(side=RIGHT)
@@ -51,71 +53,170 @@ class Review (Frame):
 		if selection=="sale":
 			f.fr=fr=Frame(f,bd=1)
 			fr.pack(side=TOP,padx=5,pady=5)
-			v1=IntVar()
-			v1.set(0)
-			v2=IntVar()
-			v2.set(0)
-			frr=Frame(fr)
-			frr.pack()
-			Label(frr,text="From").pack(side=LEFT)
-			comp.NumEntry(frr,textvariable=v1,width=8).pack(side=LEFT)
-			Label(frr,text="To").pack(side=LEFT)
-			comp.NumEntry(frr,textvariable=v2,width=8).pack(side=LEFT)
-			b=Button(frr,text="Show")
-			b.pack(side=LEFT)
-			cur=cdb.Db().connection().cursor()
-			cur.execute("select name from doc order by name;")
-			rows=cur.fetchall()
-			lb=Listbox(fr,selectmode=SINGLE)
-			lb.config(exportselection=False)
-			lb.pack()
-			lb.insert(END,"")
-			for r in rows:
-				lb.insert(END,r[0])
-			lb.selection_set(0)
-			aggr=StringVar()
-			aggr.set("")
-			Radiobutton(fr,text="Aggregate by doctor",value="doctor",variable=aggr).pack()
-			frr=Frame(fr,bd=1,relief=RIDGE)
-			frr.pack(pady=5)
-			Radiobutton(frr,text="Aggregate by date",value="date",variable=aggr).pack()
-			Label(frr,text="from").pack(side=LEFT)
-			cb1=cp.Calbutton(frr)
+			ft=Frame(fr)
+			ft.pack(padx=10,pady=10)
+			Label(ft,text="group").pack(side=LEFT,pady=20,padx=10)
+			g=comp.myComp2(ft,listitems=[])
+			g.pack()
+			ft=Frame(fr)
+			ft.pack(padx=10,pady=10)
+			Label(ft,text="drug").pack(side=LEFT,pady=20,padx=10)
+			d=comp.myComp2(ft,listitems=[])
+			d.pack()
+			self.loadgroups(g)
+			g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
+
+			ft=Frame(fr,bd=1,relief=RIDGE)
+			ft.pack(pady=5,fill=X)
+			date=BooleanVar()
+			Checkbutton(ft,text="Aggregate by date",variable=date).pack()
+			Label(ft,text="from").pack(side=LEFT)
+			cb1=cp.Calbutton(ft)
 			cb1.pack(side=LEFT)
-			Label(frr,text="to").pack(side=LEFT)
-			cb2=cp.Calbutton(frr)
+			Label(ft,text="to").pack(side=LEFT)
+			cb2=cp.Calbutton(ft)
 			cb2.pack(side=LEFT)
-			b.config(command=lambda x=v1,y=v2,z=lb,a=aggr,d1=cb1,d2=cb2:self.showSale("bills",x,y,z,a,d1,d2))
-			
-	
-	def showSale(self,mode,*args):
-		if mode=="bills":
-			v1=args[0].get()
-			v2=args[1].get()
-			v3=args[2]			
-			v3=v3.get(v3.curselection())
-			aggr=args[3].get()
-			if aggr=="doctor":
-				sql="select doc.name, sum(bill.net), count(bill.id) from bill join doc on bill.doc=doc.id where bill.id>="+str(v1)+\
-					" and bill.id <="+str(v2) +" group by doc.id order by doc.name;"
-				format="{:15.14s}  - {:12.2f} ({:5d})"
-			elif aggr=="date":
-				d1=args[4].get()
-				d2=args[5].get()
-				sql="select bill.date,sum(bill.net),min(bill.id),max(bill.id) from bill where "\
-					"bill.date>=str_to_date('"+d1+"','%d-%b-%y') and bill.date<=str_to_date('"+d2+ "','%d-%b-%y')"\
-					" group by bill.date;"
-				format="{:%d-%b,%y}  {:12.2f} {:8d}-{:8d}"
-			else:
-				if len(v3.strip())>0:
-					docstring=" and doc.name= '"+v3+"' "
-				else :
-					docstring=""
-				sql="select bill.id, bill.name as patient, doc.name as doc, bill.date, bill.net from bill join doc on bill.doc=doc.id "\
-					"where bill.id>="+str(v1)+" and bill.id<="+str(v2)+docstring+" order by bill.id;"
-				format="{:<6d} {:15.14s} {:12.10s} {:%d-%b,%y} {:8.2f}"
-			self.fillCanvas(sql,format)
-			
+
+			ft=Frame(fr,bd=1,relief=RIDGE)
+			ft.pack(pady=5,fill=X)
+			doc=BooleanVar()			
+			Checkbutton(ft,text="Aggregate by doc",variable=doc).pack()
+			dr=comp.myComp2(ft,listitems=[],listheight=3)
+			dr.pack()
+			self.loaddocs(dr)
+
+			ft=Frame(fr,bd=1,relief=RIDGE)
+			ft.pack(pady=5,fill=X)
+			countoramount=IntVar()
+			Radiobutton(ft,text="count",value=1,variable=countoramount).pack(padx=10,pady=5,side=LEFT)
+			Radiobutton(ft,text="amount",value=2,variable=countoramount).pack(padx=10,pady=5,side=LEFT)
+			countoramount.set(2)
+
+			Button(fr,text="Load",command=lambda g=g,d=d,date=date,doc=doc,dr=dr,d1=cb1,d2=cb2,cnt=countoramount: self.showsale(g,d,date,doc,dr,d1,d2,cnt)).pack(padx=20)
+
+		elif selection=="stock":
+			f.fr=fr=Frame(f,bd=1)
+			fr.pack(side=TOP,padx=5,pady=5)
+			ft=Frame(fr)
+			ft.pack(padx=10,pady=10)
+			Label(ft,text="group").pack(side=LEFT,pady=20,padx=10)
+			g=comp.myComp2(ft,listitems=[])
+			g.pack()
+			ft=Frame(fr)
+			ft.pack(padx=10,pady=10)
+			Label(ft,text="drug").pack(side=LEFT,pady=20,padx=10)
+			d=comp.myComp2(ft,listitems=[])
+			d.pack()
+			self.loadgroups(g)
+			g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
+			checklow=BooleanVar()
+			checkslow=BooleanVar()
+			Checkbutton(fr,text="Low Stock",variable=checklow).pack(pady=20)
+			Checkbutton(fr,text="Slow moving",variable=checkslow).pack(pady=10)
+			Button(fr,text="Load",command=lambda g=g,d=d,low=checklow,slow=checkslow: self.showstock(g,d,low,slow)).pack(padx=20)
+
+	def showstock(self,g,d,low,slow):
+		group=g.get()[1]
+		drug=d.get()[1]
+		checklow=low.get()
+		checkslow=slow.get()
+		print checklow
+		cur=cdb.Db().connection().cursor()
+		sql="select drg.name, sum(cur_count), min(expiry) "
+		if checklow:
+			sql+=" from and sum(stock.cur_count)<(select sum(sale.count) from sale join stock on sale.stock=stock.id join bill on bill.id=sale.bill where stock.drug_id=drg.id and bill.date>curdate-interval 30 days group by stock.drug_id)/6 "
+		else:
+			sql+="from from stock join drug drg on drg.id=stock.drug_id where stock.cur_count>0 " 
+		if drug>-1:
+			sql+= " and drg.id="+str(drug)
+		elif group>-1:
+			sql+= " and drg.id in (select drug from druggroup where druggroup.groupid="+str(group)+")"
+		sql+=" group by drg.id;"
+		print sql
+		format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
+		self.fillCanvas(sql,format)
+
+	def groupchanged(self,e,g,d):
+		cur=cdb.Db().connection().cursor()
+		group=g.get()[1]
+		sql="select * from drug "
+		if group >-1:
+			sql+=" where drug.id in (select drug from druggroup where groupid="+str(group)+") "
+		sql+=" order by drug.name;"
+		cur.execute(sql)
+		rows=cur.fetchall()
+		items=[["all",-1]]
+		for r in rows:
+			items.append([r[1],r[0]])
+		d.changelist(items)
+
+	def loaddocs(self,dr):
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select * from doc order by name;")
+		lst=[["all",-1]]
+		rows=cur.fetchall()
+		for r in rows:
+			lst.append([r[1],r[0]])
+		dr.changelist(lst)
+
+	def loadgroups(self,c):
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select * from groups order by name;")
+		lst=[["all",-1]]
+		rows=cur.fetchall()
+		for r in rows:
+			lst.append([r[1],r[0]])
+		c.changelist(lst)
+				
+	def showsale(self,g,d,date,doc,dr,d1,d2,cnt):
+		group=g.get()[1]
+		drug=d.get()[1]
+		doctor=dr.get()[1]
+		date1=d1.get()
+		date2=d2.get()
+		sortbydate=date.get()
+		sortbydoc=doc.get()
+		countoramount=cnt.get()
+		cur=cdb.Db().connection().cursor()
+		formatstring="{:15.15s} -"
+		countformat="{:6f}"
+		selectstring=" drug.name "
+		groupstring=" drug.id "
+		countstring=" sum(sale.count) "
+
+		if drug>-1:
+			wheredrug=" and drug.id={} ".format(drug)
+		elif group>-1:
+			wheredrug=" and drug.id in (select drug from druggroup where groupid={}) ".format(group)
+		else:
+			wheredrug=""
+		if countoramount==2:
+			countstring=" sum(sale.count*(stock.price*(100-stock.discount)*(100+stock.tax)/10000)) "
+			countformat=" {:7.2f}"
+		if sortbydate==1:
+			datestring=" ,bill.date "
+	 		dateorder=" bill.date, "
+			formatstring="{:%d %b,%Y} -"
+			selectstring=" bill.date "
+			groupstring=" bill.date "
+		else :
+			datestring=""
+			dateorder= ""
+		if sortbydoc==1:
+			docstring=" ,doc.name "
+			groupstring=" doc.id "
+			selectstring=" doc.name "
+		else:
+			docstring=""
+		if doctor>-1:
+			wheredoc=" and doc.id ={} ".format(doctor)
+		else: wheredoc=""
+		formatstring+=countformat
+
+		sql= "select {}, {} from drug join stock on drug.id=stock.drug_id join sale on sale.stock=stock.id join bill on sale.bill = bill.id join doc on doc.id=bill.doc where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} {}  group by {} order by {} drug.name {};".format(selectstring,countstring,date1,'%d-%b-%y',date2,'%d-%b-%y', wheredrug,wheredoc,groupstring,dateorder,docstring)
+
+		self.fillCanvas(sql,formatstring)		
+		
 
 	def fillCanvas(self,sql,fmt):
 		self.canvas.delete(ALL)
@@ -152,5 +253,6 @@ class Review (Frame):
 			fil.write(','.join(l)+"\r\n")
 	
 if __name__=="__main__":
-	a=Review()
+	t=Tk()
+	a=Review(t)
 	a.mainloop()
