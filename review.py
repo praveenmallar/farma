@@ -111,29 +111,40 @@ class Review (Frame):
 			g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
 			checklow=BooleanVar()
 			checkslow=BooleanVar()
-			Checkbutton(fr,text="Low Stock",variable=checklow).pack(pady=20)
+			checkexp=BooleanVar()
+			Checkbutton(fr,text="Low Stock",variable=checklow).pack(pady=10)
 			Checkbutton(fr,text="Slow moving",variable=checkslow).pack(pady=10)
-			Button(fr,text="Load",command=lambda g=g,d=d,low=checklow,slow=checkslow: self.showstock(g,d,low,slow)).pack(padx=20)
+			Checkbutton(fr,text="Expired(ing)",variable=checkexp).pack(pady=10)
+			Button(fr,text="Load",command=lambda g=g,d=d,low=checklow,slow=checkslow,ex=checkexp : self.showstock(g,d,low,slow,ex)).pack(padx=20,pady=5)
 
-	def showstock(self,g,d,low,slow):
+	def showstock(self,g,d,low,slow,exp):
 		group=g.get()[1]
 		drug=d.get()[1]
 		checklow=low.get()
 		checkslow=slow.get()
-		print checklow
+		checkexp=exp.get()
 		cur=cdb.Db().connection().cursor()
-		sql="select drg.name, sum(cur_count), min(expiry) "
 		if checklow:
-			sql+=" from and sum(stock.cur_count)<(select sum(sale.count) from sale join stock on sale.stock=stock.id join bill on bill.id=sale.bill where stock.drug_id=drg.id and bill.date>curdate-interval 30 days group by stock.drug_id)/6 "
+			sql="select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count< saletable.sale/6  "
+			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
+		elif checkslow:
+			sql="select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30  "
+			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
+		elif checkexp:
+			sql="select drug.name,stock.cur_count,stock.expiry from drug join stock on drug.id=stock.drug_id where stock.cur_count>0 and stock.expiry < curdate()+interval 30 day "			
+			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
 		else:
-			sql+="from from stock join drug drg on drg.id=stock.drug_id where stock.cur_count>0 " 
+			sql="select drug.name, sum(stock.cur_count) as cur_count, min(stock.expiry) as expiry from stock join drug on drug.id=stock.drug_id where stock.cur_count>0 " 
+			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
 		if drug>-1:
-			sql+= " and drg.id="+str(drug)
+			sql+= " and drug.id="+str(drug)
 		elif group>-1:
-			sql+= " and drg.id in (select drug from druggroup where druggroup.groupid="+str(group)+")"
-		sql+=" group by drg.id;"
+			sql+= " and drug.id in (select drug from druggroup where druggroup.groupid="+str(group)+")"
+		if not checkexp:
+			sql+=" and expiry> curdate() group by drug.id order by drug.name;"
+		else:
+			sql+=" group by drug.id order by drug.name;"
 		print sql
-		format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
 		self.fillCanvas(sql,format)
 
 	def groupchanged(self,e,g,d):
