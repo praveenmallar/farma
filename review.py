@@ -13,13 +13,13 @@ class Review (Frame):
 		if not parent:
 			parent=Toplevel()
 		Frame.__init__(self, parent)
-		parent.minsize(width=800,height=600)
+		parent.minsize(width=900,height=600)
 		f1=Frame(self,height=100,width=800,bd=2,relief=SUNKEN)
 		f1.pack(side=TOP,fill=X)
 		self.f1=f1
 		f1.pack_propagate(0)
 		
-		f2=Frame(self, width=250,height=500,bd=2,relief=SUNKEN)
+		f2=Frame(self, width=250,height=550,bd=2,relief=SUNKEN)
 		f2.pack(side=LEFT,fill=Y)
 		f2.fr=None
 		self.f2=f2
@@ -41,6 +41,7 @@ class Review (Frame):
 	def packoptions(self):
 		Button(self.f1,text="Sale",command=lambda:self.showOptions("sale")).pack(side=LEFT)
 		Button(self.f1,text="Stock",command=lambda:self.showOptions("stock")).pack(side=LEFT)
+		Button(self.f1,text="Purchase",command=lambda:self.showOptions("purchase")).pack(side=LEFT)
 
 		if self.status=="admin":
 			Button(self.f1,text="Print",command=self.printlines).pack(side=RIGHT)
@@ -51,20 +52,7 @@ class Review (Frame):
 		if f.fr:
 			f.fr.pack_forget()
 		if selection=="sale":
-			f.fr=fr=Frame(f,bd=1)
-			fr.pack(side=TOP,padx=5,pady=5)
-			ft=Frame(fr)
-			ft.pack(padx=10,pady=10)
-			Label(ft,text="group").pack(side=LEFT,pady=20,padx=10)
-			g=comp.myComp2(ft,listitems=[])
-			g.pack()
-			ft=Frame(fr)
-			ft.pack(padx=10,pady=10)
-			Label(ft,text="drug").pack(side=LEFT,pady=20,padx=10)
-			d=comp.myComp2(ft,listitems=[])
-			d.pack()
-			self.loadgroups(g)
-			g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
+			fr=self.packdruggroup(f)
 
 			ft=Frame(fr,bd=1,relief=RIDGE)
 			ft.pack(pady=5,fill=X)
@@ -92,30 +80,102 @@ class Review (Frame):
 			Radiobutton(ft,text="amount",value=2,variable=countoramount).pack(padx=10,pady=5,side=LEFT)
 			countoramount.set(2)
 
-			Button(fr,text="Load",command=lambda g=g,d=d,date=date,doc=doc,dr=dr,d1=cb1,d2=cb2,cnt=countoramount: self.showsale(g,d,date,doc,dr,d1,d2,cnt)).pack(padx=20)
+			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,date=date,doc=doc,dr=dr,d1=cb1,d2=cb2,cnt=countoramount: self.showsale(g,d,date,doc,dr,d1,d2,cnt)).pack(padx=20)
 
 		elif selection=="stock":
-			f.fr=fr=Frame(f,bd=1)
-			fr.pack(side=TOP,padx=5,pady=5)
-			ft=Frame(fr)
-			ft.pack(padx=10,pady=10)
-			Label(ft,text="group").pack(side=LEFT,pady=20,padx=10)
-			g=comp.myComp2(ft,listitems=[])
-			g.pack()
-			ft=Frame(fr)
-			ft.pack(padx=10,pady=10)
-			Label(ft,text="drug").pack(side=LEFT,pady=20,padx=10)
-			d=comp.myComp2(ft,listitems=[])
-			d.pack()
-			self.loadgroups(g)
-			g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
+			fr=self.packdruggroup(f)
 			checklow=BooleanVar()
 			checkslow=BooleanVar()
 			checkexp=BooleanVar()
 			Checkbutton(fr,text="Low Stock",variable=checklow).pack(pady=10)
 			Checkbutton(fr,text="Slow moving",variable=checkslow).pack(pady=10)
 			Checkbutton(fr,text="Expired(ing)",variable=checkexp).pack(pady=10)
-			Button(fr,text="Load",command=lambda g=g,d=d,low=checklow,slow=checkslow,ex=checkexp : self.showstock(g,d,low,slow,ex)).pack(padx=20,pady=5)
+			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,low=checklow,slow=checkslow,ex=checkexp : self.showstock(g,d,low,slow,ex)).pack(padx=20,pady=5)
+
+		elif selection=="purchase":
+			fr=self.packdruggroup(f)
+			ft=Frame(fr)
+			ft.pack(pady=10,padx=10)
+			Label(ft,text="stockist").pack(side=LEFT,pady=20,padx=10)		
+			st=comp.myComp2(ft,listitems=[])
+			st.pack()
+			self.loadstockists(st)
+			ft=Frame(fr)
+			ft.pack(pady=10,padx=10)
+			Label(ft,text="time period").pack(side=LEFT,pady=20,padx=10)
+			ft.timeperiod=IntVar()
+			Radiobutton(ft,variable=ft.timeperiod,text="one week",value=1).pack(side= TOP, pady=2,padx=10)
+			Radiobutton(ft,variable=ft.timeperiod,text="one month",value=2).pack(side= TOP, pady=2,padx=10)
+			Radiobutton(ft,variable=ft.timeperiod,text="six months",value=3).pack(side= TOP, pady=2,padx=10)
+			Radiobutton(ft,variable=ft.timeperiod,text="one year",value=4).pack(side= TOP, pady=2,padx=10)
+			Radiobutton(ft,variable=ft.timeperiod,text="all time",value=5).pack(side= TOP, pady=2,padx=10)
+			ft.timeperiod.set(3)
+			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,st=st,t=ft: self.showpurchase(g,d,st,t)).pack(pady=5,padx=20)
+
+	def showpurchase(self,g,d,s,t):
+		gr=g.get()[1]
+		dr=d.get()[1]
+		st=s.get()[1]
+		tm=t.timeperiod.get()
+		print gr,dr,st,tm
+		templist=[" 7 day "," 1 month ", " 6 month ", " 1 year "]
+		cur=cdb.Db().connection().cursor()
+		if dr>-1:
+			sql=("select stockist.name,purchase.date,stock.start_count,stock.buy_price,stock.price * (1-(stock.discount/100)+(stock.tax/100)) " )
+			format=" {:15.15s} {:%b,%y} {:5.0f} {:7.2f} {:7.2f}"
+		else:
+			sql = ("select drug.name, sum(stock.start_count), avg(stock.buy_price),avg(stock.price * (1-(stock.discount/100)+(stock.tax/100)) )" )
+			format=" {:15.15s} {:5.0f} {:7.2f} {:7.2f}"
+		sql+=(" from drug join stock on drug.id=stock.drug_id join purchase on purchase.id=stock.purchase_id join bill on bill.id=purchase.bill "
+			" join stockist on purchase.stockist=stockist.id ")
+		whered=False
+		if dr>-1:
+			sql+=" where drug.id={} ".format(dr)
+			whered=True
+		elif gr>-1:
+			sql +=" where drug.id in (select drug from druggroup where groupid={}) ".format(gr)
+			whered=True
+		if st>-1:
+			sql+= (" and " if whered else  " where ")+" stockist.id={}".format(st)
+			whered=True
+		if tm!=5:
+			sql += (" and "if whered else " where ")+" purchase.date>curdate() - interval "+templist[tm-1]
+		if dr==-1:
+			sql += " group by drug.id order by drug.name ;"
+		else :
+			sql += " order by stockist.name, purchase.date ;"
+		print sql
+		print format
+		self.fillCanvas(sql,format)
+
+	def loadstockists(self,comp):
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select * from stockist order by name;")
+		rows=cur.fetchall()
+		items=[["all",-1]]
+		for r in rows:
+			items.append([r[1],r[0]])
+		comp.changelist(items)
+
+	def packdruggroup(self,f):
+		f.fr=fr=Frame(f,bd=1)
+		fr.pack(side=TOP,padx=5,pady=5)
+		ft=Frame(fr)
+		ft.pack(padx=10,pady=10)
+		Label(ft,text="group").pack(side=LEFT,pady=20,padx=10)
+		g=comp.myComp2(ft,listitems=[])
+		g.pack()
+		ft=Frame(fr)
+		ft.pack(padx=10,pady=10)
+		Label(ft,text="drug").pack(side=LEFT,pady=20,padx=10)
+		d=comp.myComp2(ft,listitems=[])
+		d.pack()
+		self.loadgroups(g)
+		g.bind("<<listChanged>>",lambda e=None,x=g,y=d:self.groupchanged(e,x,y))
+		fr.g=g
+		fr.d=d
+		return fr
+			
 
 	def showstock(self,g,d,low,slow,exp):
 		group=g.get()[1]
@@ -125,16 +185,18 @@ class Review (Frame):
 		checkexp=exp.get()
 		cur=cdb.Db().connection().cursor()
 		if checklow:
-			sql="select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count< saletable.sale/6  "
+			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from  drug" 					" join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
 			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
 		elif checkslow:
-			sql="select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30  "
+			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on" 					" drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30")
 			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
 		elif checkexp:
-			sql="select drug.name,stock.cur_count,stock.expiry from drug join stock on drug.id=stock.drug_id where stock.cur_count>0 and stock.expiry < curdate()+interval 30 day "			
+			sql=("select drug.name,stock.cur_count,stock.expiry from drug join stock on"
+				" drug.id=stock.drug_id where stock.cur_count>0 and stock.expiry < curdate()+interval 30 day ")
 			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
 		else:
-			sql="select drug.name, sum(stock.cur_count) as cur_count, min(stock.expiry) as expiry from stock join drug on drug.id=stock.drug_id where stock.cur_count>0 " 
+			sql=("select drug.name, sum(stock.cur_count) as cur_count, min(stock.expiry) as expiry "
+				"from stock join drug on drug.id=stock.drug_id where stock.cur_count>0 " )
 			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
 		if drug>-1:
 			sql+= " and drug.id="+str(drug)
@@ -144,7 +206,6 @@ class Review (Frame):
 			sql+=" and expiry> curdate() group by drug.id order by drug.name;"
 		else:
 			sql+=" group by drug.id order by drug.name;"
-		print sql
 		self.fillCanvas(sql,format)
 
 	def groupchanged(self,e,g,d):
