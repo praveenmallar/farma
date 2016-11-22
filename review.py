@@ -84,13 +84,13 @@ class Review (Frame):
 
 		elif selection=="stock":
 			fr=self.packdruggroup(f)
-			checklow=BooleanVar()
-			checkslow=BooleanVar()
-			checkexp=BooleanVar()
-			Checkbutton(fr,text="Low Stock",variable=checklow).pack(pady=10)
-			Checkbutton(fr,text="Slow moving",variable=checkslow).pack(pady=10)
-			Checkbutton(fr,text="Expired(ing)",variable=checkexp).pack(pady=10)
-			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,low=checklow,slow=checkslow,ex=checkexp : self.showstock(g,d,low,slow,ex)).pack(padx=20,pady=5)
+			fr.opt=opt=IntVar()
+			Radiobutton(fr,text="Low Stock",variable=opt,value=0).pack(pady=10)
+			Radiobutton(fr,text="Slow moving",variable=opt,value=1).pack(pady=10)
+			Radiobutton(fr,text="Expired(ing)",variable=opt,value=2).pack(pady=10)
+			Radiobutton(fr,text="None",variable=opt,value=3).pack(pady=10)
+			opt.set(3)
+			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,opt=fr.opt : self.showstock(g,d,opt)).pack(padx=20,pady=5)
 
 		elif selection=="purchase":
 			fr=self.packdruggroup(f)
@@ -177,16 +177,24 @@ class Review (Frame):
 		return fr
 			
 
-	def showstock(self,g,d,low,slow,exp):
+	def showstock(self,g,d,op):
 		group=g.get()[1]
 		drug=d.get()[1]
-		checklow=low.get()
-		checkslow=slow.get()
-		checkexp=exp.get()
+		opt=op.get()
+		checklow=checkslow=checkexp=False
+		if opt==0:
+			checklow=True		
+		elif opt==1:
+			checkslow=True
+		elif opt==2:
+			checkexp=True
 		cur=cdb.Db().connection().cursor()
 		if checklow:
-			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from  drug" 					" join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
-			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
+			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale, purchasetable.stockist from  drug" 					" join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid join (select drug.id as drugid,stockist.name as stockist, stockist.id as stockistid from drug"
+				" join (select * from stock order by id desc)st on st.drug_id=drug.id join purchase on purchase.id=st.purchase_id join "
+				"stockist on purchase.stockist=stockist.id group by drug.id ) purchasetable on drug.id=purchasetable.drugid "
+				"where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
+			format=" {:20.20s} {:6.0f} {:6.0f} {:10.10s}"
 		elif checkslow:
 			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on" 					" drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30")
 			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
@@ -202,10 +210,13 @@ class Review (Frame):
 			sql+= " and drug.id="+str(drug)
 		elif group>-1:
 			sql+= " and drug.id in (select drug from druggroup where druggroup.groupid="+str(group)+")"
-		if not checkexp:
+		if checklow:
+			sql += " group by drug.id order by purchasetable.stockist,drug.name; "
+		elif checkexp:
 			sql+=" and expiry> curdate() group by drug.id order by drug.name;"
 		else:
 			sql+=" group by drug.id order by drug.name;"
+		print sql
 		self.fillCanvas(sql,format)
 
 	def groupchanged(self,e,g,d):
