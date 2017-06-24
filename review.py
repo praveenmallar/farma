@@ -42,6 +42,7 @@ class Review (Frame):
 		Button(self.f1,text="Sale",command=lambda:self.showOptions("sale")).pack(side=LEFT)
 		Button(self.f1,text="Stock",command=lambda:self.showOptions("stock")).pack(side=LEFT)
 		Button(self.f1,text="Purchase",command=lambda:self.showOptions("purchase")).pack(side=LEFT)
+		Button(self.f1,text="Bills",command=lambda:self.showOptions("bills")).pack(side=LEFT)
 
 		if self.status=="admin":
 			Button(self.f1,text="Print",command=self.printlines).pack(side=RIGHT)
@@ -53,13 +54,14 @@ class Review (Frame):
 			f.fr.pack_forget()
 		if selection=="sale":
 			fr=self.packdruggroup(f)
-
 			ft=Frame(fr,bd=1,relief=RIDGE)
 			ft.pack(pady=5,fill=X)
 			date=BooleanVar()
 			Checkbutton(ft,text="Aggregate by date",variable=date).pack()
 			Label(ft,text="from").pack(side=LEFT)
-			cb1=cp.Calbutton(ft)
+			d=dt.date.today()
+			dd=dt.date(day=1,month=d.month,year=d.year)
+			cb1=cp.Calbutton(ft,inidate=dd)
 			cb1.pack(side=LEFT)
 			Label(ft,text="to").pack(side=LEFT)
 			cb2=cp.Calbutton(ft)
@@ -112,6 +114,43 @@ class Review (Frame):
 			ft.timeperiod.set(3)
 			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,st=st,t=ft: self.showpurchase(g,d,st,t)).pack(pady=5,padx=20)
 
+		elif selection=="bills":
+			f.fr=fr=Frame(f,bd=1)
+			fr.pack(side=TOP,padx=5,pady=5)			
+			ft=Frame(fr)
+			ft.pack(pady=20,fill=X)
+			Label(ft,text="From").pack(side=LEFT)
+			d=dt.date.today()
+			dd=dt.date(day=1,month=d.month,year=d.year)
+			d1=cp.Calbutton(ft,inidate=dd)
+			d1.pack(side=RIGHT)
+			ft=Frame(fr)
+			ft.pack(pady=20,fill=X)
+			Label(ft,text="To").pack(side=LEFT)
+			d2=cp.Calbutton(ft)
+			d2.pack(side=RIGHT)
+			optdate=BooleanVar()
+			Checkbutton(fr,text="aggregate by date",variable=optdate).pack(pady=20)
+			Button(fr,text="Load",command=lambda d1=d1,d2=d2,op1=optdate:self.showbills(d1,d2,op1)).pack(pady=5)
+
+	def showbills(self,d1,d2,op1):
+		d1=d1.get()
+		d2=d2.get()
+		optdate=op1.get()
+		cur=cdb.Db().connection().cursor()
+		if not optdate:
+			sql="select bill.id, bill.name, bill.net, bill.date, doc.name from bill join doc on bill.doc=doc.id where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") order by bill.id;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
+			format=" {:6.0f}  {:15.15s}  {:7.2f}  {:%d-%b-%y}  {:15.15s}"
+			titlefields=("Bill","Patient","amount","date","doctor")
+			title=" {:6.6s}  {:15.15s}  {:7.7s}  {:9.9s}  {:15.15s}".format(*titlefields)
+		else:
+			sql="select bill.date, min(bill.id),max(bill.id),sum(bill.net) from bill where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") group by bill.date order by bill.id;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
+			format=" {:%d-%b-%y}  {:7.0f}  {:7.0f}  {:10.2f}"
+			titlefields=("date","from","to","amount")
+			title=" {:9.9s}  {:7.7s}  {:7.7s}  {:10.10s}".format(*titlefields)
+			
+		self.fillCanvas(sql,format,titlefields,title) 
+
 	def showpurchase(self,g,d,s,t):
 		gr=g.get()[1]
 		dr=d.get()[1]
@@ -123,9 +162,14 @@ class Review (Frame):
 		if dr>-1:
 			sql=("select stockist.name,purchase.date,stock.start_count,stock.buy_price,stock.price * (1-(stock.discount/100)+(stock.tax/100)) " )
 			format=" {:15.15s} {:%b,%y} {:5.0f} {:7.2f} {:7.2f}"
+			tf=("stockist","date","count","cost","price")
+			tl=" {:15.15s} {:6.6s} {:5.5s} {:7.7s} {:7.7s}".format(*tf)
 		else:
 			sql = ("select drug.name, sum(stock.start_count), avg(stock.buy_price),avg(stock.price * (1-(stock.discount/100)+(stock.tax/100)) )" )
 			format=" {:15.15s} {:5.0f} {:7.2f} {:7.2f}"
+			tf=("drug","count","cost","price")
+			tl=" {:15.15s} {:5.5s} {:7.7s} {:7.7s}".format(*tf)
+			
 		sql+=(" from drug join stock on drug.id=stock.drug_id join purchase on purchase.id=stock.purchase_id join bill on bill.id=purchase.bill "
 			" join stockist on purchase.stockist=stockist.id ")
 		whered=False
@@ -144,9 +188,7 @@ class Review (Frame):
 			sql += " group by drug.id order by drug.name ;"
 		else :
 			sql += " order by stockist.name, purchase.date ;"
-		print sql
-		print format
-		self.fillCanvas(sql,format)
+		self.fillCanvas(sql,format,tf,tl)
 
 	def loadstockists(self,comp):
 		cur=cdb.Db().connection().cursor()
@@ -195,17 +237,26 @@ class Review (Frame):
 				"stockist on purchase.stockist=stockist.id group by drug.id ) purchasetable on drug.id=purchasetable.drugid "
 				"where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
 			format=" {:20.20s} {:6.0f} {:6.0f} {:10.10s}"
+			tf=("drug","stock","sale(30d)","stockist")
+			tl=" {:20.20s} {:6.6s} {:6.6s} {:10.10s}".format(*tf)
+			
 		elif checkslow:
 			sql=("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on" 					" drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on" 					" sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on" 					" drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30")
-			format=" {:20.20s}   {:6.0f}  {:6.0f}    exp:{:%b-%y}"
+			format=" {:20.20s}   {:6.0f}  {:6.0f}    {:%b-%y}"
+			tf=("drug","stock","sale","expiry")
+			tl=" {:20.20s}   {:6.6s}  {:6.6s}    {:6.6s}".format(*tf)
 		elif checkexp:
 			sql=("select drug.name,stock.cur_count,stock.expiry from drug join stock on"
 				" drug.id=stock.drug_id where stock.cur_count>0 and stock.expiry < curdate()+interval 30 day ")
-			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
+			format=" {:20.20s}   {:6.0f}    {:%b-%y}"
+			tf=("drug","stock","expiry")
+			tl=" {:20.20s}   {:6.6s}    {:6.6s}".format(*tf)
 		else:
 			sql=("select drug.name, sum(stock.cur_count) as cur_count, min(stock.expiry) as expiry "
 				"from stock join drug on drug.id=stock.drug_id where stock.cur_count>0 " )
-			format=" {:20.20s}   {:6.0f}    exp:{:%b-%y}"
+			format=" {:20.20s}   {:6.0f}    {:%b-%y}"
+			tf=("drug","stock","expiry")
+			tl=" {:20.20s}   {:6.6s}    {:6.6s}".format(*tf)
 		if drug>-1:
 			sql+= " and drug.id="+str(drug)
 		elif group>-1:
@@ -216,8 +267,7 @@ class Review (Frame):
 			sql+=" and expiry> curdate() group by drug.id order by drug.name;"
 		else:
 			sql+=" group by drug.id order by drug.name;"
-		print sql
-		self.fillCanvas(sql,format)
+		self.fillCanvas(sql,format,tf,tl)
 
 	def groupchanged(self,e,g,d):
 		cur=cdb.Db().connection().cursor()
@@ -301,7 +351,7 @@ class Review (Frame):
 		self.fillCanvas(sql,formatstring)		
 		
 
-	def fillCanvas(self,sql,fmt):
+	def fillCanvas(self,sql,fmt,titlefields=None,title=None):
 		self.canvas.delete(ALL)
 		con=cdb.Db().connection()
 		cur=con.cursor()
@@ -314,6 +364,12 @@ class Review (Frame):
 		i=0
 		self.lines=[]
 		self.csv=[]
+		if title: 
+			self.lines.append(title)
+			self.canvas.create_text(2,5+i*20,text=title,anchor=NW,font=("FreeMono",10))
+			i+=1
+		if titlefields: 
+			self.csv.append(titlefields)
 		for row in rows:
 			line=fmt.format(*row)
 			self.lines.append(line)
@@ -331,7 +387,6 @@ class Review (Frame):
 			return		
 		fil=open(filename,'w')
 		for l in self.csv:
-			print l
 			l=map(str,l)
 			fil.write(','.join(l)+"\r\n")
 	
