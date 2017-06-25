@@ -40,6 +40,7 @@ class Review (Frame):
 
 	def packoptions(self):
 		Button(self.f1,text="Sale",command=lambda:self.showOptions("sale")).pack(side=LEFT)
+		Button(self.f1,text="Sale2",command=lambda:self.showOptions("sale2")).pack(side=LEFT)
 		Button(self.f1,text="Stock",command=lambda:self.showOptions("stock")).pack(side=LEFT)
 		Button(self.f1,text="Purchase",command=lambda:self.showOptions("purchase")).pack(side=LEFT)
 		Button(self.f1,text="Bills",command=lambda:self.showOptions("bills")).pack(side=LEFT)
@@ -83,7 +84,22 @@ class Review (Frame):
 			countoramount.set(2)
 
 			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,date=date,doc=doc,dr=dr,d1=cb1,d2=cb2,cnt=countoramount: self.showsale(g,d,date,doc,dr,d1,d2,cnt)).pack(padx=20)
+			
+		elif selection=="sale2":
+			fr=self.packdruggroup(f)
+			ft=Frame(fr,bd=1,relief=RIDGE)
+			ft.pack(pady=5,fill=X)
+			Label(ft,text="from").pack(side=LEFT)
+			d=dt.date.today()
+			dd=dt.date(day=1,month=d.month,year=d.year)
+			cb1=cp.Calbutton(ft,inidate=dd)
+			cb1.pack(side=LEFT)
+			Label(ft,text="to").pack(side=LEFT)
+			cb2=cp.Calbutton(ft)
+			cb2.pack(side=LEFT)
 
+			Button(fr,text="Load",command=lambda g=fr.g,d=fr.d,d1=cb1,d2=cb2: self.showsale2(g,d,d1,d2)).pack(padx=20)
+			
 		elif selection=="stock":
 			fr=self.packdruggroup(f)
 			fr.opt=opt=IntVar()
@@ -351,17 +367,35 @@ class Review (Frame):
 
 		self.fillCanvas(sql,formatstring)		
 		
+	def showsale2(self,g,d,d1,d2):
+		group=g.get()[1]
+		drug=d.get()[1]
+		date1=d1.get()
+		date2=d2.get()
+		cur=cdb.Db().connection().cursor()
+		formatstring="{:12.12s}-{:10.10s}-{:4d}-{:18.18s}-{:%d%b}"
+		if drug>-1:
+			wheredrug=" and drug.id={} ".format(drug)
+		elif group>-1:
+			wheredrug=" and drug.id in (select drug from druggroup where groupid={}) ".format(group)
+		else:
+			wheredrug=""
+				
+		sql="select drug.name,stock.batch,sale.count,bill.name,bill.date from drug join stock on drug.id=stock.drug_id join sale on stock.id=sale.stock join bill on bill.id=sale.bill where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} order by drug.name,sale.id".format(date1,'%d-%b-%y',date2,'%d-%b-%y',wheredrug)
+		
+		self.fillCanvas(sql,formatstring)
 
 	def fillCanvas(self,sql,fmt,titlefields=None,title=None):
 		self.canvas.delete(ALL)
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		try:
-			cur.execute(sql)
-			rows=cur.fetchall()
-		except:
-			tmb.showerror("Error","check for values",parent=self.master)
-			return
+		print sql
+		#try:
+		cur.execute(sql)
+		rows=cur.fetchall()
+		#except:
+		#	tmb.showerror("Error","check for values",parent=self.master)
+		#	return
 		i=0
 		self.lines=[]
 		self.csv=[]
