@@ -188,6 +188,7 @@ class Review (Frame):
 			sql += " group by drug.id order by drug.name ;"
 		else :
 			sql += " order by stockist.name, purchase.date ;"
+		print sql
 		self.fillCanvas(sql,format,tf,tl)
 
 	def loadstockists(self,comp):
