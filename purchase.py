@@ -44,9 +44,15 @@ class addStock(Frame):
 		Label(f1,text="Date",font=myfont).grid(row=2,column=0,sticky=E,padx=4,pady=2)
 		self.date=calpicker.Calbutton(f1,width=14)
 		self.date.grid(row=2,column=1,sticky=E+W+N+S,padx=4,pady=2)
-		Label(f1,text="Total",font=myfont).grid(row=3,column=0,sticky=E,padx=4,pady=2)
+		Label(f1,text='CGST',font=myfont).grid(row=3,column=0,sticky=E,padx=4,pady=2)
+		self.cgst=comp.NumEntry(f1,width=14)
+		self.cgst.grid(row=3,column=1,sticky=E+W+N+S,padx=4,pady=4)
+		Label(f1,text='SGST',font=myfont).grid(row=4,column=0,sticky=E,padx=4,pady=2)
+		self.sgst=comp.NumEntry(f1,width=14)
+		self.sgst.grid(row=4,column=1,sticky=E+W+N+S,padx=4,pady=4)
+		Label(f1,text="Total",font=myfont).grid(row=5,column=0,sticky=E,padx=4,pady=2)
 		self.total=comp.NumEntry(f1,width=14)
-		self.total.grid(row=3,column=1,sticky=E+W+N+S,padx=4,pady=4)
+		self.total.grid(row=5,column=1,sticky=E+W+N+S,padx=4,pady=4)
 		f1.pack(side=TOP)	
 
 		#frame2 - to add stocks
@@ -90,9 +96,12 @@ class addStock(Frame):
 		f3=self.f3=Canvas(f,bd=1,relief=SUNKEN,yscrollcommand=sb.set,width=700,height=300)
 		f3.pack(fill=BOTH,expand=1)
 		sb.config(command=f3.yview)
+		self.gstbill=IntVar()
+		Checkbutton(self,text="GST Bill",variable=self.gstbill,onvalue=1,offvalue=0).pack(pady=50)
+		self.gstbill.set(1)
 		submitButton=Button(self,text="Submit\nBill", font=("Times",14,"bold"),padx=10,pady=10,command=self.addbill)
 		submitButton.bind("<Return>",self.addbill)		
-		submitButton.pack(side=RIGHT)
+		submitButton.pack()
 
 		self.pack()
 		self.stockists.focus()
@@ -141,7 +150,25 @@ class addStock(Frame):
 	def removeframe(self,button):
 		self.items.remove(button.master)
 		self.refreshcanvas()
-
+	
+	def getgst(self,mrp):
+		print mrp
+		sh=shelve.open("data.db")
+		try:
+			cgst=float(sh["cgst"])
+		except:
+			cgst=0
+		try:
+			sgst=float(sh["sgst"])
+		except:
+			sgst=0
+		cgst=mrp*cgst/100
+		sgst=mrp*sgst/100
+		sell_rate=mrp-(cgst+sgst)
+		print sell_rate
+		return (sell_rate,cgst,sgst)
+		
+		
 	def addbill(self,event=None):
 		db=cdb.Db().connection()
 		cur = db.cursor()
@@ -150,13 +177,15 @@ class addStock(Frame):
 		billno=self.billno.get()
 		date=self.date.get()
 		total=str(self.total.get())
+		bill_cgst=str(self.cgst.get())
+		bill_sgst=str(self.sgst.get())
 		
 		try:
 			sql="select id from stockist where name='"+stockist+"';"
 			cur.execute(sql)
 			row=cur.fetchone()
 			stockistid=row[0]
-			sql="insert into purchase (bill,stockist,date,amount) values ('"+str(billno)+"','"+str(stockistid)+"',str_to_date('"+date+"','%d-%b-%y'),"+total+");"
+			sql="insert into purchase (bill,stockist,date,amount,cgst,sgst) values ('"+str(billno)+"','"+str(stockistid)+"',str_to_date('"+date+"','%d-%b-%y'),"+total+","+bill_cgst+","+bill_sgst+");"
 			cur.execute(sql)
 			billid=cur.lastrowid
 			billtotal=0
@@ -167,7 +196,17 @@ class addStock(Frame):
 				batch=f.batch
 				count=f.count
 				rate=f.rate
-				mrp=f.mrp
+				if self.gstbill.get()==1:
+					mrp=self.getgst(f.mrp)
+					print mrp
+					sellrate=mrp[0]
+					cgst=mrp[1]
+					sgst=mrp[2]
+					mrp=sellrate
+					print mrp
+				else:
+					mrp=f.mrp
+				print mrp
 				disc=f.disc
 				tax=f.tax
 				expiry=f.expiry
@@ -177,19 +216,25 @@ class addStock(Frame):
 				row=cur.fetchone()
 				drugid=row[0]
 				sql="select sum(stock.cur_count) from stock where stock.drug_id=%s and stock.expiry> curdate();"
-				cur.execute(sql,(drugid))
+				cur.execute(sql,[drugid])
 				r=cur.fetchone()
 				existing_stock=r[0]
 				sql="select sum(sale.count) from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where bill.date> date_add(curdate(), interval -1 month) and stock.drug_id=%s;"
-				cur.execute(sql,(drugid))
+				cur.execute(sql,[drugid])
 				r=cur.fetchone()
 				lastmonth_sale=r[0]
-				sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, tax,discount,terminate) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,0)"
-				print sql
-				cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,tax,disc))
+				if self.gstbill.get()==1:
+					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgst,sgst, purchase_id,buy_price, tax,discount,terminate) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"
+					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,cgst,sgst,billid,rate,tax,disc))
+				else:
+					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, tax,discount,terminate) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"
+					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,tax,disc))
+					
 				billtotal=billtotal+count*rate
-				sell_mrp=sell_rate(mrp,disc,tax)
-				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(sell_mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
+				if self.gstbill.get()==1:
+					mrp=mrp+cgst+sgst
+				mrp=sell_rate(mrp,disc,tax)
+				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
 			db.commit()
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])

@@ -81,7 +81,7 @@ class printer:
 		f.write	(output)
 		f.close()
 
-def printbill(billno,patient,doc,date,total,items,discount=0,ip=None,selfbill=0):
+def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,selfbill=0):
 	p=printer()
 	if selfbill==1:
 		p.text("selfbill")
@@ -95,6 +95,7 @@ def printbill(billno,patient,doc,date,total,items,discount=0,ip=None,selfbill=0)
 		p.align_left()
 		p.blank(1)
 		p.text("DL No:20/110674,21/110675")
+		p.text("GST No:32AAMFM2726K1Z7")
 		p.blank()
 		p.text("Bill number: "+str(billno))
 	p.text("Patient: "+patient)	
@@ -110,6 +111,11 @@ def printbill(billno,patient,doc,date,total,items,discount=0,ip=None,selfbill=0)
 		p.blank(blanklines)
 	p.bold()
 	p.text('  {:30s}{:7.2f}'.format("TOTAL: ",total))
+	p.text('  {:30s}{:7.2f}'.format("CGST: ",cgst))
+	p.text('  {:30s}{:7.2f}'.format("SGST: ",sgst))
+	p.blank()
+	p.text('  {:30s}{:7.2f}'.format("NET Amount: ",total+cgst+sgst))
+	
 	p.no_bold()
 	if discount>0:
 		p.blank(1)

@@ -9,7 +9,7 @@ import connectdb as cdb
 from bill import print_day_bills as print_daybills
 
 
-class Pharma():
+class Pharma:
 
 	def __init__(self):
 		self.master=Tk()
@@ -18,8 +18,10 @@ class Pharma():
 		self.master.title("Mukunda Pharmacy")
 		self.addmenus()
 		self.addshortcuts()
+		self.stock=[]
+		self.restock()
 		f=Frame(self.master)
-		bill.Bill(f).pack()
+		bill.Bill(self,f).pack()
 		f.pack()
 		self.master.mainloop()
 
@@ -27,7 +29,7 @@ class Pharma():
 		f=Frame(self.master,bd=1,relief=SUNKEN)
 		f.pack()
 		photo=PhotoImage(file="./images/bill.png")
-		b=Button(f,image=photo,text="bill",compound=BOTTOM,width=100,height=100,command=lambda:bill.Bill())
+		b=Button(f,image=photo,text="bill",compound=BOTTOM,width=100,height=100,command=lambda:bill.Bill(self))
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/purchase.png")
@@ -80,6 +82,7 @@ class Pharma():
 		adminmenu.add_checkbutton(label="Debug",command=self.noprinter,variable=self.debug)
 		adminmenu.add_command(label="Set Printers",command=self.setprinters)
 		adminmenu.add_command(label="Set Db params",command=self.dbparams)
+		adminmenu.add_command(label="Set GST rates",command=self.setgst)
 		menu.add_cascade(label="Admin",menu=adminmenu)
 
 		self.master.config(menu=menu)
@@ -206,6 +209,10 @@ class Pharma():
 	def dbparams(self):
 		if password.askpass("admin"):
 			win=cdb.DbVariables()
+			
+	def setgst(self):
+		if password.askpass("admin"):
+			SetTax(Toplevel())
 	
 	def checkdb(self):
 		try:
@@ -220,6 +227,54 @@ class Pharma():
 			return
 		d=dt.date.today()-dt.timedelta(days=1)
 		print_daybills(d)
+		
+	def restock(self):
+		db=cdb.Db().connection()
+		cursor=db.cursor()
+		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price) as price ,saletable.last_month_sale "\
+			"from drug join stock on drug.id=stock.drug_id left join "\
+			"(select sum(sale.count) as last_month_sale, stock.drug_id as drugid from sale join stock on sale.stock=stock.id join bill "\
+			"on sale.bill=bill.id where bill.date>curdate() - interval 30 day group by drugid)saletable on drug.id=saletable.drugid "\
+			"where stock.expiry>curdate()+ interval 20 day and stock.cur_count>0  group by drug.id order by drug.name;"
+		cursor.execute(sql)
+		rows=cursor.fetchall()
+		stock=[]
+		for row in rows:
+			stock.append(row)
+		self.stock=stock
+		self.master.event_generate("<<stock_changed>>")
+		print "restock"
+		
+class SetTax (Frame):
+
+	def __init__(self,parent=None):
+		if not parent:
+			parent=Tk()
+		Frame.__init__(self,parent)
+		sh=shelve.open('data.db')
+		try:
+			cgst=sh['cgst']
+			sgst=sh['sgst']
+		except:
+			cgst=0
+			sgst=0
+		self.pack()
+		self.varCgst=StringVar()
+		self.varCgst.set(cgst)
+		self.varSgst=StringVar()
+		self.varSgst.set(sgst)
+		Label(self,text="CGST").grid(row=0,column=0)
+		Entry(self,textvariable=self.varCgst).grid(row=0,column=1)
+		Label(self,text="SGST").grid(row=1,column=0)
+		Entry(self,textvariable=self.varSgst).grid(row=1,column=1)
+		Button(self,text="Save",command=self.save).grid(row=2,column=1)
+		
+	def save(self):
+		sh=shelve.open('data.db')
+		sh['cgst']=self.varCgst.get()
+		sh['sgst']=self.varSgst.get()
+		self.master.destroy()
+		
 
 if __name__=="__main__":
 	Pharma()

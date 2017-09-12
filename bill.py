@@ -45,10 +45,11 @@ def sell_discount(mrp,discount):
 	return float(mrp)*(float(discount)/100)
 
 class Bill(Frame):
-	def __init__(self,parent=None):
+	def __init__(self,master,parent=None):
 		if not parent:
 			parent=Toplevel()
 		Frame.__init__(self,parent)
+		self.rw=master
 		try:
 			self.master.title("Make Bill")	
 		except:
@@ -83,13 +84,14 @@ class Bill(Frame):
 		self.f2=f2=Frame(self)
 		f2.pack(side=TOP,pady=10)
 		self.populateDrugFrame(f2,myfont)
-
+		self.rw.master.bind("<<stock_changed>>",lambda x=None:self.populateDrugFrame(self.f2,myfont))
+		
 		f=Frame(self)		
 		f.pack(side=LEFT,fill=X,expand=1,padx=10,pady=10)
 		sb=Scrollbar(f)
 		sb.pack(side=RIGHT,fill=Y)
 		f3=self.f3=Canvas(f,bd=1,relief=SUNKEN,yscrollcommand=sb.set,width=300,height=300)
-		f3.pack(fill=BOTH,expand=1)
+		f3.pack(fill=BOTH,expand=1) 
 		sb.config(command=f3.yview)
 
 		f4=Frame(self)
@@ -140,26 +142,15 @@ class Bill(Frame):
 		self.refreshcanvas()
 	
 	def populateDrugFrame(self,frame,myfont=("Times",10,"bold")):
+		print "populate", frame,myfont
 		try:
 			frame.f2.destroy()
 		except Exception:
 			pass
-		db=cdb.Db().connection()
-		cursor=db.cursor()
-		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price) as price ,saletable.last_month_sale "\
-			"from drug join stock on drug.id=stock.drug_id left join "\
-			"(select sum(sale.count) as last_month_sale, stock.drug_id as drugid from sale join stock on sale.stock=stock.id join bill "\
-			"on sale.bill=bill.id where bill.date>curdate() - interval 30 day group by drugid)saletable on drug.id=saletable.drugid "\
-			"where stock.expiry>curdate()+ interval 20 day and stock.cur_count>0  group by drug.id order by drug.name;"
-		cursor.execute(sql)
-		rows=cursor.fetchall()
-		stock=[]
-		for row in rows:
-			stock.append(row)
 		f2=Frame(frame)
 		f2.pack(ipadx=10,ipady=10,fill=BOTH)
 		Label(f2,font=myfont,text="Drug").pack(side=LEFT)
-		self.drugsComp=drugComp(f2,listitems=stock,listheight=2,width=20)
+		self.drugsComp=drugComp(f2,listitems=self.rw.stock,listheight=2,width=20)
 		self.drugsComp.pack(side=LEFT)
 		Label(f2,text="count",font=myfont).pack(side=LEFT)
 		self.drug=StringVar()
@@ -204,28 +195,40 @@ class Bill(Frame):
 				sql="insert into bill(name, doc, date) values(%s,%s,%s);"
 				cur.execute(sql,(patient,docid,date.isoformat()) )
 				billid=cur.lastrowid
-			billtotal=0
+			billtotal=0.0
 			discount=0
+			cgst=0.0
+			sgst=0.0
 			items=[]
 
 			for frame in self.items:
 				drug=frame.drug.get()
 				count=frame.drugcount.get()
 				i=0
-				cur.execute("select id from drug where name =%s",(drug))
+				cur.execute("select id from drug where name =%s",[drug])
 				row=cur.fetchone()
 				drugid=row[0]
 				dictcur=db.cursor(cdb.dictcursor)
-				dictcur.execute("select id, cur_count,price,tax,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",(drugid))
+				dictcur.execute("select id, cur_count,price,cgst,sgst,tax,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",[drugid])
 				batches=dictcur.fetchall()
 				for batch in batches:
+					if batch['cgst']:
+						batch_cgst=float(batch['cgst'])
+					else:
+						batch_cgst=0
+					if batch['sgst']:
+						batch_sgst=float(batch['sgst'])
+					else:
+						batch_sgst=0	
 					if count>batch["cur_count"]:
 						count=count-batch["cur_count"]
-						cur.execute("update stock set cur_count=0 where id=%s;",(batch["id"]))
+						cur.execute("update stock set cur_count=0 where id=%s;",[batch["id"]])
 						if selfbill==0:
 							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);", (batch["id"],billid,batch["cur_count"]))
 						saleamount=batch["cur_count"]*sell_rate(batch['price'],batch['discount'],batch['tax'])
 						billtotal=billtotal+saleamount
+						cgst=cgst+batch_cgst*batch['cur_count']
+						sgst=sgst+batch_sgst*batch['cur_count']
 						discount+=discount+batch['cur_count']*sell_discount(batch['price'],batch['discount'])
 						items.append([drug+"("+str(batch['cur_count'])+')-'+str(batch['batch']),saleamount,batch['expiry']])  
 					elif count>0:
@@ -235,6 +238,8 @@ class Bill(Frame):
 							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch["id"],billid,count))
 						saleamount=count*sell_rate(batch['price'],batch['discount'],batch['tax'])
 						billtotal=billtotal+saleamount
+						cgst=cgst+count*batch_cgst
+						sgst=sgst+count*batch_sgst
 						discount+=count*sell_discount(batch['price'],batch['discount'])
 						items.append([drug+"("+str(count)+')-'+str(batch['batch']),saleamount,batch['expiry']])  
 						count=0
@@ -244,11 +249,13 @@ class Bill(Frame):
 					raise cdb.mdb.Error(420, "not enough stock of " +drug )
 			
 			if selfbill==0:
-				cur.execute("update bill set net=%s where id=%s;",(billtotal,billid))	
+				cur.execute("update bill set cgst=%s where id=%s;",(cgst,billid))
+				cur.execute("update bill set sgst=%s where id=%s;",(sgst,billid))
+				cur.execute("update bill set net=%s where id=%s;",(billtotal+cgst+sgst,billid))	
 			if ip:		
 				cur.execute("insert into credit(patientid,billid) values(%s,%s);",(patientid,billid))
 			db.commit()
-			printbill.printbill(billid,patient,doc,date,billtotal,items,discount,IP,selfbill)
+			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,discount,IP,selfbill)
 			sh=shelve.open("data.db")
 			if selfbill==0:			
 				if ip:
@@ -262,14 +269,14 @@ class Bill(Frame):
 				cursale=sh[token]
 			except:
 				cursale=0
-			sh[token]=float(cursale)+float(billtotal)
+			sh[token]=float(cursale)+float(billtotal+cgst+sgst)
 			self.items=[]
 			self.refreshcanvas()
 			self.varPatient.set("")
 			self.doc.clear()
 			self.patient.clear()
 			self.selfbill.set(0)
-			self.populateDrugFrame(self.f2)
+			self.rw.restock()
 		except cdb.mdb.Error as e:
 			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self.master)
 			if db:
@@ -292,7 +299,9 @@ def print_day_bills(day):
 			f1=sale['drug']+"("+str(sale['count'])+")"+str(sale['batch'])	
 			items.append([f1,amount,sale['expiry']	])	
 		printbill.printbill(bill['id'],bill['name'],bill['doc'],bill['date'],bill['net'],items)
+		
 
+	
 if __name__=="__main__":
 	
 	Bill().mainloop()

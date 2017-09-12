@@ -160,10 +160,10 @@ class Review (Frame):
 			titlefields=("Bill","Patient","amount","date","doctor")
 			title=" {:6.6s}  {:15.15s}  {:7.7s}  {:9.9s}  {:15.15s}".format(*titlefields)
 		else:
-			sql="select bill.date, min(bill.id),max(bill.id),sum(bill.net) from bill where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") group by bill.date order by bill.id;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
-			format=" {:%d-%b-%y}  {:7.0f}  {:7.0f}  {:10.2f}"
-			titlefields=("date","from","to","amount")
-			title=" {:9.9s}  {:7.7s}  {:7.7s}  {:10.10s}".format(*titlefields)
+			sql="select bill.date, min(bill.id),max(bill.id),sum(bill.net),sum(bill.cgst+bill.sgst) from bill where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") group by bill.date order by bill.date;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
+			format=" {:%d-%b-%y}  {:7.0f}  {:7.0f}  {:10.2f} {:9.2f}"
+			titlefields=("date","from","to","net","gst")
+			title=" {:9.9s}  {:7.7s}  {:7.7s}  {:10.10s} {:10.10s}".format(*titlefields)
 			
 		self.fillCanvas(sql,format,titlefields,title) 
 
@@ -186,7 +186,7 @@ class Review (Frame):
 			tf=("drug","count","cost","price")
 			tl=" {:15.15s} {:5.5s} {:7.7s} {:7.7s}".format(*tf)
 			
-		sql+=(" from drug join stock on drug.id=stock.drug_id join purchase on purchase.id=stock.purchase_id join bill on bill.id=purchase.bill "
+		sql+=(" from drug join stock on drug.id=stock.drug_id join purchase on purchase.id=stock.purchase_id "
 			" join stockist on purchase.stockist=stockist.id ")
 		whered=False
 		if dr>-1:
@@ -345,25 +345,25 @@ class Review (Frame):
 			countformat=" {:7.2f}"
 		if sortbydate==1:
 			datestring=" ,bill.date "
-	 		dateorder=" bill.date, "
+	 		dateorder=" bill.date "
 			formatstring="{:%d %b,%Y} -"
 			selectstring=" bill.date "
 			groupstring=" bill.date "
 		else :
 			datestring=""
-			dateorder= ""
+			dateorder= " drug.name "
 		if sortbydoc==1:
-			docstring=" ,doc.name "
+			dateorder=" doc.name "
 			groupstring=" doc.id "
 			selectstring=" doc.name "
 		else:
-			docstring=""
+			dateorder=" drug.name "
 		if doctor>-1:
 			wheredoc=" and doc.id ={} ".format(doctor)
 		else: wheredoc=""
 		formatstring+=countformat
 
-		sql= "select {}, {} from drug join stock on drug.id=stock.drug_id join sale on sale.stock=stock.id join bill on sale.bill = bill.id join doc on doc.id=bill.doc where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} {}  group by {} order by {} drug.name {};".format(selectstring,countstring,date1,'%d-%b-%y',date2,'%d-%b-%y', wheredrug,wheredoc,groupstring,dateorder,docstring)
+		sql= "select {}, {} from drug join stock on drug.id=stock.drug_id join sale on sale.stock=stock.id join bill on sale.bill = bill.id join doc on doc.id=bill.doc where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} {}  group by {} order by {} ;".format(selectstring,countstring,date1,'%d-%b-%y',date2,'%d-%b-%y', wheredrug,wheredoc,groupstring,dateorder)
 
 		self.fillCanvas(sql,formatstring)		
 		
@@ -373,7 +373,8 @@ class Review (Frame):
 		date1=d1.get()
 		date2=d2.get()
 		cur=cdb.Db().connection().cursor()
-		formatstring="{:12.12s}-{:10.10s}-{:4d}-{:18.18s}-{:%d%b}"
+		formatstring="{:12.12s}-{:10.10s}-{:6d} ({:5d}) {:18.18s}-{:%d%b}"
+		tl="{:12.12s}-{:10.10s}-{:6.6s} ({:5.5s}) {:18.18s}-{:5.5s}".format("drug","batch","bill","count","patient","date")
 		if drug>-1:
 			wheredrug=" and drug.id={} ".format(drug)
 		elif group>-1:
@@ -381,21 +382,21 @@ class Review (Frame):
 		else:
 			wheredrug=""
 				
-		sql="select drug.name,stock.batch,sale.count,bill.name,bill.date from drug join stock on drug.id=stock.drug_id join sale on stock.id=sale.stock join bill on bill.id=sale.bill where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} order by drug.name,sale.id".format(date1,'%d-%b-%y',date2,'%d-%b-%y',wheredrug)
+		sql="select drug.name,stock.batch,bill.id,sale.count,bill.name,bill.date from drug join stock on drug.id=stock.drug_id join sale on stock.id=sale.stock join bill on bill.id=sale.bill where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} order by drug.name,sale.id".format(date1,'%d-%b-%y',date2,'%d-%b-%y',wheredrug)
 		
-		self.fillCanvas(sql,formatstring)
+		self.fillCanvas(sql,formatstring,title=tl)
 
 	def fillCanvas(self,sql,fmt,titlefields=None,title=None):
 		self.canvas.delete(ALL)
 		con=cdb.Db().connection()
 		cur=con.cursor()
 		print sql
-		#try:
-		cur.execute(sql)
-		rows=cur.fetchall()
-		#except:
-		#	tmb.showerror("Error","check for values",parent=self.master)
-		#	return
+		try:
+			cur.execute(sql)
+			rows=cur.fetchall()
+		except:
+			tmb.showerror("Error","check for values",parent=self.master)
+			return
 		i=0
 		self.lines=[]
 		self.csv=[]

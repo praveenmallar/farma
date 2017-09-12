@@ -51,7 +51,7 @@ class Cancel(Frame):
 		db=cdb.Db().connection()
 		cur=db.cursor(cdb.dictcursor)
 		sql="select drug.name,sale.id,sale.count,stock.price,stock.discount,stock.tax,bill.name as patient,bill.net as total,bill.date from bill join sale on bill.id=sale.bill join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id where bill.id=%s;"
-		cur.execute(sql,(str(self.curbill)))	
+		cur.execute(sql,[str(self.curbill)])	
 		rows=cur.fetchall()
 		if len(rows)==0:
 			return
@@ -130,6 +130,7 @@ class Cancel(Frame):
 			con.rollback()
 		finally:
 			con.close()
+			self.searchbill()
 
 	def cancelbill(self):
 		if not tkMessageBox.askyesno("confirm Cancel","Are you sure you want to cancel bill "+str(self.curbill),parent=self.master):
@@ -138,7 +139,7 @@ class Cancel(Frame):
 		con=cdb.Db().connection()
 		cur=con.cursor()
 		sql="select sale.id from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where stock.expiry < curdate() + interval 30 day and bill.id= %s;"
-		cur.execute(sql,(str(self.curbill)))
+		cur.execute(sql,[str(self.curbill)])
 		if cur.rowcount>0:
 			tkMessageBox.showerror("Can not cancel bill","looks like one of the item is near expiry",parent=self.master)
 			return
@@ -147,19 +148,19 @@ class Cancel(Frame):
 			if self.isip(self.curbill,cur):	
 				ip=True
 			sql="select sale.id as saleid, sale.count as count,sale.stock as stock from sale where sale.bill=%s;"
-			cur.execute(sql,(self.curbill))
+			cur.execute(sql,[self.curbill])
 			rows=cur.fetchall()
 			for row in rows:
 				sql="update stock set cur_count=cur_count+%s where stock.id=%s"
 				cur.execute(sql,(row[1],row[2]))
 				sql="update sale set count=0 where id=%s"
-				cur.execute(sql,(row[0]))
+				cur.execute(sql,[row[0]])
 			sql="select net from bill where id=%s;"
-			cur.execute(sql,(self.curbill))
+			cur.execute(sql,[self.curbill])
 			row=cur.fetchone()
 			returnamount=row[0]
 			sql="update bill set net=0 where id=%s;"
-			cur.execute(sql,(self.curbill))
+			cur.execute(sql,[self.curbill])
 			con.commit()
 			if not ip:
 				printout=[]
@@ -181,10 +182,11 @@ class Cancel(Frame):
 			con.rollback()
 		finally:
 			con.close()
+			self.searchbill()
 
 	def isexpired(self,sale,cur):
 		sql="select stock.id from sale join stock on sale.stock=stock.id where stock.expiry>curdate()+interval 30 day and sale.id= %s;"
-		cur.execute(sql,(sale))
+		cur.execute(sql,[sale])
 		if cur.rowcount>0:
 			return False
 		else:
@@ -192,7 +194,7 @@ class Cancel(Frame):
 	
 	def isip(self,bill,cur):
 		sql="select patient.id from patient join credit on patient.id=credit.patientid join bill on credit.billid=bill.id where patient.discharged=0 and bill.id=%s;"
-		cur.execute(sql,(bill))
+		cur.execute(sql,[bill])
 		if cur.rowcount>0:
 			return True
 		else:
@@ -203,13 +205,15 @@ class Cancel(Frame):
 		if not cur:
 			cur=cdb.Db().connection().cursor()
 		if not biller:
-			sql="select bill.name, doc.name as doc,bill.date, bill.net, drug.name as drug, sale.count,stock.batch,stock.expiry,stock.price,stock.tax,stock.discount from bill join sale on sale.bill=bill.id join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id left join doc on bill.doc=doc.id where bill.id=%s;"
-			cur.execute(sql,(billno))
+			sql="select bill.name, doc.name as doc,bill.date, bill.net, drug.name as drug, sale.count,stock.batch,stock.expiry,stock.price, stock.tax,stock.discount,bill.cgst,bill.sgst from bill join sale on sale.bill=bill.id join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id left join doc on bill.doc=doc.id where bill.id=%s;"
+			cur.execute(sql,[billno])
 			r=cur.fetchone()
 			patient=r[0]
 			doc=r[1]
 			date=r[2]
-			total=r[3]
+			total=r[3]-r[11]-r[12]
+			cgst=r[11]
+			sgst=r[12]
 			cur.scroll(0,mode="absolute")
 			rows=cur.fetchall()
 			items=[]
@@ -219,13 +223,13 @@ class Cancel(Frame):
 				items.append(item)
 			sql="select patient.name from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where bill.id=%s and patient.discharged=0;"
 			ip=None
-			cur.execute(sql,(billno))
+			cur.execute(sql,[billno])
 			if cur.rowcount>0:
 				r=cur.fetchone()
 				f=r[0].split("::")
 				ip=f[0]
-			biller={"billno":str(billno)+ "  COPY","patient":patient,"doc":doc,"date":date,"total":total,"items":items,"ip":ip}
-		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['items'],biller['ip'])
+			biller={"billno":str(billno)+ "  COPY","patient":patient,"doc":doc,"date":date,"total":total,"items":items,"ip":ip,"cgst":cgst,"sgst":sgst}
+		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['cgst'],biller['sgst'],biller['items'],biller['ip'])
 		
 if __name__=="__main__":
 	f=Cancel()
