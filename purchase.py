@@ -12,8 +12,7 @@ class addStock(Frame):
 
 	def __init__(self, parent=None,*args, **kwargs):
 		if not parent:
-			t=Toplevel()
-			parent=t
+			parent=Tk()
 		Frame.__init__(self,parent,*args,**kwargs)
 		self.items=[]
 		db=cdb.Db().connection()
@@ -76,10 +75,15 @@ class addStock(Frame):
 		self.disc=DoubleVar()
 		comp.NumEntry(f2,width=10,textvariable=self.disc).pack(side=LEFT)
 		self.disc.set(0)
-		Label(f2,text="Tax",font=myfont).pack(side=LEFT)
+		Label(f2,text="CGST",font=myfont).pack(side=LEFT)
+		self.cgst=DoubleVar()
+		comp.NumEntry(f2,textvariable=self.cgst,width=3).pack(side=LEFT)
+		self.cgst.set(0)
+		Label(f2,text="SGST",font=myfont).pack(side=LEFT)
+		self.sgst=DoubleVar()
+		comp.NumEntry(f2,textvariable=self.sgst,width=3).pack(side=LEFT)
+		self.sgst.set(0)
 		self.tax=DoubleVar()
-		comp.NumEntry(f2,width=10,textvariable=self.tax).pack(side=LEFT)
-		self.tax.set(0)
 		Label(f2,text="Expiry",font=myfont).pack(side=LEFT)
 		self.expiry=calpicker.Calbutton(f2,width=14)
 		self.expiry.pack(side=LEFT)
@@ -89,11 +93,11 @@ class addStock(Frame):
 		f2.pack(side=TOP)
 
 		#frame3 - bill list
-		f=Frame(self,width=800,height=300)		
+		f=Frame(self,width=850,height=300)		
 		f.pack(side=LEFT,fill=X,expand=1)
 		sb=Scrollbar(f)
 		sb.pack(side=RIGHT,fill=Y)
-		f3=self.f3=Canvas(f,bd=1,relief=SUNKEN,yscrollcommand=sb.set,width=700,height=300)
+		f3=self.f3=Canvas(f,bd=1,relief=SUNKEN,yscrollcommand=sb.set,width=800,height=300)
 		f3.pack(fill=BOTH,expand=1)
 		sb.config(command=f3.yview)
 		self.gstbill=IntVar()
@@ -108,23 +112,31 @@ class addStock(Frame):
 
 	def addstock(self,event=None):
 		f=Frame(self.f3,bd=1,relief=RIDGE)
+		try:
+			f.cgst=self.cgst.get()
+			f.sgst=self.sgst.get()
+			if f.cgst==0 or f.sgst==0:
+				raise ValueError("cgst or sgst cant be 0")
+		except ValueError:
+			tkMessageBox.showerror("Error","error in GST")
+			return			
 		f.drug=self.drug.get()
 		Label(f,width=20,height=1,text=f.drug).pack(side=LEFT)
 		f.batch=self.batch.get()		
-		Label(f,width=10,height=1,text=f.batch).pack(side=LEFT)
+		Label(f,width=14,height=1,text="batch "+f.batch).pack(side=LEFT)
 		f.count=int(self.count.get())
-		Label(f,width=5,height=1,text=f.count).pack(side=LEFT)
+		Label(f,width=10,height=1,text="count "+str(f.count)).pack(side=LEFT)
 		f.rate=float(self.rate.get())
-		Label(f,width=8,height=1,text=f.rate).pack(side=LEFT)
+		Label(f,width=12,height=1,text="rate "+str(f.rate)).pack(side=LEFT)
 		f.mrp=float(self.mrp.get())
-		Label(f,width=8,height=1,text=f.mrp).pack(side=LEFT)
+		Label(f,width=12,height=1,text="mrp "+str(f.mrp)).pack(side=LEFT)
 		f.disc=float(self.disc.get())
-		Label(f,width=8,height=1,text=f.disc).pack(side=LEFT)
-		f.tax=float(self.tax.get())
-		Label(f,width=8,height=1,text=f.tax).pack(side=LEFT)
+		Label(f,width=8,height=1,text="disc "+str(f.disc)).pack(side=LEFT)
+		Label(f,width=8,height=1,text="cgst "+str(f.cgst)).pack(side=LEFT)
+		Label(f,width=8,height=1,text="sgst "+str(f.sgst)).pack(side=LEFT)
 		f.expiry=self.expiry.get()
-		Label(f,width=8,height=1,text=f.expiry).pack(side=LEFT)
-		b=Button(f,text="remove")
+		Label(f,width=12,height=1,text="exp "+str(f.expiry)).pack(side=LEFT)
+		b=Button(f,text="remove",width=10)
 		b.config(command=lambda: self.removeframe(b))		
 		b.pack(side=LEFT)	
 		self.items.append(f)
