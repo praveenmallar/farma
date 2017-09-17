@@ -39,8 +39,8 @@ class drugComp(Frame):
 	def focus(self):
 		self.c1.focus()	
 
-def sell_rate(mrp,discount,tax):
-	return float(mrp)*(100-float(discount))*(100+float(tax))/10000
+def sell_rate(mrp,discount):
+	return mrp-float(mrp)*float(discount)/100
 def sell_discount(mrp,discount):
 	return float(mrp)*(float(discount)/100)
 
