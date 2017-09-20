@@ -75,14 +75,13 @@ class addStock(Frame):
 		comp.NumEntry(f2,width=10,textvariable=self.disc).pack(side=LEFT)
 		self.disc.set(0)
 		Label(f2,text="CGST",font=myfont).pack(side=LEFT)
-		self.cgst=DoubleVar()
-		comp.NumEntry(f2,textvariable=self.cgst,width=3).pack(side=LEFT)
-		self.cgst.set(0)
+		self.cgstp=DoubleVar()
+		comp.NumEntry(f2,textvariable=self.cgstp,width=3).pack(side=LEFT)
+		self.cgstp.set(0)
 		Label(f2,text="SGST",font=myfont).pack(side=LEFT)
-		self.sgst=DoubleVar()
-		comp.NumEntry(f2,textvariable=self.sgst,width=3).pack(side=LEFT)
-		self.sgst.set(0)
-		self.tax=DoubleVar()
+		self.sgstp=DoubleVar()
+		comp.NumEntry(f2,textvariable=self.sgstp,width=3).pack(side=LEFT)
+		self.sgstp.set(0)
 		Label(f2,text="Expiry",font=myfont).pack(side=LEFT)
 		self.expiry=calpicker.Calbutton(f2,width=14)
 		self.expiry.pack(side=LEFT)
@@ -112,8 +111,8 @@ class addStock(Frame):
 	def addstock(self,event=None):
 		f=Frame(self.f3,bd=1,relief=RIDGE)
 		try:
-			f.cgst=self.cgst.get()
-			f.sgst=self.sgst.get()
+			f.cgst=self.cgstp.get()
+			f.sgst=self.sgstp.get()
 			if f.cgst==0 or f.sgst==0:
 				raise ValueError("cgst or sgst cant be 0")
 		except ValueError:

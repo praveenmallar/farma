@@ -40,14 +40,12 @@ class drugComp(Frame):
 		self.c1.focus()	
 
 def sell_rate(mrp,discount):
-	return mrp-float(mrp)*float(discount)/100
-def sell_discount(mrp,discount):
-	return float(mrp)*(float(discount)/100)
+	return float(mrp)-float(mrp)*float(discount)/100
 
 class Bill(Frame):
-	def __init__(self,master,parent=None):
+	def __init__(self,master=None,parent=None):
 		if not parent:
-			parent=Toplevel()
+			parent=Tk()
 		Frame.__init__(self,parent)
 		self.rw=master
 		try:
@@ -209,15 +207,15 @@ class Bill(Frame):
 				row=cur.fetchone()
 				drugid=row[0]
 				dictcur=db.cursor(cdb.dictcursor)
-				dictcur.execute("select id, cur_count,price,cgst,sgst,tax,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",[drugid])
+				dictcur.execute("select id, cur_count,price,cgstp,sgstp,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",[drugid])
 				batches=dictcur.fetchall()
 				for batch in batches:
-					if batch['cgst']:
-						batch_cgst=float(batch['cgst'])
+					if batch['cgstp']:
+						batch_cgst=float(batch['cgstp'])
 					else:
 						batch_cgst=0
-					if batch['sgst']:
-						batch_sgst=float(batch['sgst'])
+					if batch['sgstp']:
+						batch_sgst=float(batch['sgstp'])
 					else:
 						batch_sgst=0	
 					if count>batch["cur_count"]:
@@ -225,22 +223,20 @@ class Bill(Frame):
 						cur.execute("update stock set cur_count=0 where id=%s;",[batch["id"]])
 						if selfbill==0:
 							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);", (batch["id"],billid,batch["cur_count"]))
-						saleamount=batch["cur_count"]*sell_rate(batch['price'],batch['discount'],batch['tax'])
+						saleamount=batch["cur_count"]*sell_rate(batch['price'],batch['discount'])
 						billtotal=billtotal+saleamount
-						cgst=cgst+batch_cgst*batch['cur_count']
-						sgst=sgst+batch_sgst*batch['cur_count']
-						discount+=discount+batch['cur_count']*sell_discount(batch['price'],batch['discount'])
+						cgst=cgst+saleamount*batch_cgst/100
+						sgst=sgst+saleamount*batch_sgst/100
 						items.append([drug+"("+str(batch['cur_count'])+')-'+str(batch['batch']),saleamount,batch['expiry']])  
 					elif count>0:
 						newcount=batch["cur_count"]-count
 						cur.execute("update stock set cur_count=%s where id=%s;",(newcount,batch["id"]))
 						if selfbill==0:
 							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch["id"],billid,count))
-						saleamount=count*sell_rate(batch['price'],batch['discount'],batch['tax'])
+						saleamount=count*sell_rate(batch['price'],batch['discount'])
 						billtotal=billtotal+saleamount
-						cgst=cgst+count*batch_cgst
-						sgst=sgst+count*batch_sgst
-						discount+=count*sell_discount(batch['price'],batch['discount'])
+						cgst=cgst+saleamount*batch_cgst/100
+						sgst=sgst+saleamount*batch_sgst/100
 						items.append([drug+"("+str(count)+')-'+str(batch['batch']),saleamount,batch['expiry']])  
 						count=0
 					else:
@@ -249,13 +245,11 @@ class Bill(Frame):
 					raise cdb.mdb.Error(420, "not enough stock of " +drug )
 			
 			if selfbill==0:
-				cur.execute("update bill set cgst=%s where id=%s;",(cgst,billid))
-				cur.execute("update bill set sgst=%s where id=%s;",(sgst,billid))
-				cur.execute("update bill set net=%s where id=%s;",(billtotal+cgst+sgst,billid))	
+				cur.execute("update bill set cgst=%s,sgst=%s,net=%s where id=%s;",(cgst,sgst,billtotal+cgst+sgst,billid))
 			if ip:		
 				cur.execute("insert into credit(patientid,billid) values(%s,%s);",(patientid,billid))
 			db.commit()
-			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,discount,IP,selfbill)
+			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,IP,selfbill)
 			sh=shelve.open("data.db")
 			if selfbill==0:			
 				if ip:
