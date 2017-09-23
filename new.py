@@ -1,6 +1,7 @@
 import Tkinter as tk
 import connectdb as cdb
 from tkMessageBox import askokcancel,showinfo
+from comp import myComp2
 
 class addNew(tk.Frame):
 
@@ -89,49 +90,53 @@ class addNew(tk.Frame):
 		for row in result:
 			self.lb.insert(tk.END,row[1])
 
-class addDoc(addNew):
-	def __init__(self, parent=None, table="doc",field="name",title="Add Doctor"):
-		addNew.__init__(self,parent,table,field,title)
-			
-class addStockist(addNew):
-	def __init__(self, parent=None, table="stockist",field="name",title="Add Stockist"):
-		addNew.__init__(self,parent,table,field,title)
 		
 class addDrug(addNew):
 	def __init__(self, parent=None, table="drug",field="name",title="Add Drug"):
 		addNew.__init__(self,parent,table,field,title)
-		self.mfcrs=[]
+		self.mfrs=[(" ",-1)]
 		cur=self.db.cursor()
-		cur.execute("select name from manufacture order by name;")
+		cur.execute("select name,id from manufacture order by name;")
 		fs=cur.fetchall()
 		for f in fs:
-			self.mfcrs.append(f[0])
-		self.mfcr=tk.StringVar()
-		self.mfcr.set(self.mfcrs[0])
+			self.mfrs.append((f[0],f[1]))
 		tk.Label(self.mfcrFrame,text="Manufacturer").grid(row=1,column=1)
-		tk.OptionMenu(self.mfcrFrame,self.mfcr,*self.mfcrs).grid(row=1,column=2)
-	
+		self.comp=myComp2(self.mfcrFrame,listitems=self.mfrs,listheight=2)
+		self.comp.grid(row=1,column=2)
+		
 	def listboxchanged(self,e):
 		addNew.listboxchanged(self,e)
 		cur=self.db.cursor()
 		dr=self.lb.get(self.lb.curselection()[0])
 		print dr
-		cur.execute("select name from manufacture where id=(select manufacture from drug where name=%s);",(dr))
-		r=cur.fetchone()
-		self.mfcr.set(r[0])
+		cur.execute("select name from manufacture where id in (select manufacture from drug where name=%s);",[dr])
+		if cur.rowcount==1:
+			r=cur.fetchone()
+			r=r[0]
+		else:
+			r=""
+		self.comp.text.set(r)
 
+	def edit(self):
+		addNew.edit(self)
+		mfcr=self.comp.get()[1]
+		cur=self.db.cursor()
+		cur.execute("update drug set manufacture=%s where name=%s",(mfcr,self.ed.get()))
+		
+		
 class adder(tk.Frame):
 	def __init__(self,parent=None):
 		if not parent:
-			t=tk.Toplevel()
+			t=tk.Tk()
 			parent=t
 		tk.Frame.__init__(self,parent)
+		addNew(self, table="doc",field="name",title="Add Doctor").pack(side="left")
+		addNew(self, table="stockist",field="name",title="Add Stockist").pack(side="left")
 		addDrug(self).pack(side="left")
-		addDoc(self).pack(side="left")
-		addStockist(self).pack(side="left")
+		addNew(self, table="manufacture", field="name",title="Add Manufacturer").pack(side="left")
 		self.pack()
 
 if __name__==	"__main__":
 	t=tk.Tk()
-	ad=addDrug(t)
+	ad=adder(t)
 	ad.mainloop()
