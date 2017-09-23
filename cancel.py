@@ -4,7 +4,6 @@ import comp
 import tkMessageBox
 import printer as printbill
 import shelve
-from bill import sell_rate
 
 class Cancel(Frame):
 		
@@ -50,7 +49,7 @@ class Cancel(Frame):
 		self.items=[]
 		db=cdb.Db().connection()
 		cur=db.cursor(cdb.dictcursor)
-		sql="select drug.name,sale.id,sale.count,stock.price,stock.discount,stock.tax,bill.name as patient,bill.net as total,bill.date from bill join sale on bill.id=sale.bill join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id where bill.id=%s;"
+		sql="select drug.name,sale.id,sale.count,stock.price,stock.discount,stock.cgstp,stock.sgstp,bill.name as patient,bill.net as total,bill.date from bill join sale on bill.id=sale.bill join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id where bill.id=%s;"
 		cur.execute(sql,[str(self.curbill)])	
 		rows=cur.fetchall()
 		if len(rows)==0:
@@ -71,7 +70,7 @@ class Cancel(Frame):
 			f.count.set(f.oldcount)
 			comp.NumEntry(f,textvariable=f.count,width=5).pack(side=LEFT,padx=10,pady=10)
 			f.id=row['id']
-			f.price=sell_rate(row['price'],row['discount'],row['tax'])
+			f.price=row['price'] (1+ row['cgstp']/100 + row['sgstp']/100)
 			self.canvas.create_window(1,1+i*40,window=f,anchor=NW)
 			i=i+1
 			self.items.append(f)
