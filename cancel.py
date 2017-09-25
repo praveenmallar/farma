@@ -70,7 +70,7 @@ class Cancel(Frame):
 			f.count.set(f.oldcount)
 			comp.NumEntry(f,textvariable=f.count,width=5).pack(side=LEFT,padx=10,pady=10)
 			f.id=row['id']
-			f.price=row['price']* (1+ row['cgstp']/100 + row['sgstp']/100)
+			f.price=row['price']*(1-row['discount']/100)* (1+ row['cgstp']/100 + row['sgstp']/100)
 			self.canvas.create_window(1,1+i*40,window=f,anchor=NW)
 			i=i+1
 			self.items.append(f)

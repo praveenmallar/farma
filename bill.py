@@ -240,7 +240,7 @@ class Bill(Frame):
 						billtotal=billtotal+saleamount
 						cgst=cgst+saleamount*batch_cgst/100
 						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount]*(1+batch_cgst/100+batch_sgst/100))  
+						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount*(1+batch_cgst/100+batch_sgst/100)])  
 						count=0
 					else:
 						break						
