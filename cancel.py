@@ -202,23 +202,23 @@ class Cancel(Frame):
 	def reprint(self,cur=None,biller=None):
 		billno=self.curbill
 		if not cur:
-			cur=cdb.Db().connection().cursor()
+			cur=cdb.Db().connection().cursor(cdb.dictcursor)
 		if not biller:
-			sql="select bill.name, doc.name as doc,bill.date, bill.net, drug.name as drug, sale.count,stock.batch,stock.expiry,stock.price, stock.tax,stock.discount,bill.cgst,bill.sgst from bill join sale on sale.bill=bill.id join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id left join doc on bill.doc=doc.id where bill.id=%s;"
+			sql="select bill.name as patient, doc.name as doc,bill.date as date, bill.net as net,bill.cgst as cgst,bill.sgst as sgst, drug.name as drug, manufacture.name as manufacture, sale.count as qty,stock.batch as batch,stock.expiry as expiry,stock.price as price, stock.cgstp as cgstp, stock.sgstp as sgstp,stock.discount as discount,bill.cgst as cgst,bill.sgst as sgst from bill join sale on sale.bill=bill.id join stock on sale.stock=stock.id join drug on stock.drug_id=drug.id left join manufacture on manufacture.id=drug.manufacture left join doc on bill.doc=doc.id where bill.id=%s;"
 			cur.execute(sql,[billno])
 			r=cur.fetchone()
-			patient=r[0]
-			doc=r[1]
-			date=r[2]
-			total=r[3]-r[11]-r[12]
-			cgst=r[11]
-			sgst=r[12]
+			patient=r["patient"]
+			doc=r["doc"]
+			date=r["date"]
+			total=r["net"]-r["cgst"]-r["sgst"]
+			cgst=r["cgst"]
+			sgst=r["sgst"]
 			cur.scroll(0,mode="absolute")
 			rows=cur.fetchall()
 			items=[]
 			for r in rows:
-				price=sell_rate(r[8],r[10],r[9])
-				item=(r[4]+" ("+str(r[5])+") -"+str(r[6]),r[5]*price,r[7])
+				price=sell_rate(r["price"],r["discount"])
+				item=(r["drug"],r["manufacture"],r['batch'],r['qty'],r['expiry'],price*(1+r['sgstp']+r['cgstp']))
 				items.append(item)
 			sql="select patient.name from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where bill.id=%s and patient.discharged=0;"
 			ip=None

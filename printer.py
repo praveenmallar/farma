@@ -1,5 +1,5 @@
 import os
-header = ("Mukunda Hospital Pharmacy","Payyanur ph: 04985 205119,202939")
+header = ("Mukunda Pharmacy","Payyanur ph: 04985 205119,202939")
 import shelve
 import tkMessageBox as tmb
 import Tkinter as tk
@@ -85,26 +85,33 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	p=printer()
 	if selfbill==1:
 		p.text("selfbill")
-		p.blank(1)
 	else:
 		p.align_center()
 		p.title()
 		p.text(header[0])
-		p.no_title()
 		p.text(header[1])
+		p.text("CASH BILL")
 		p.align_left()
-		p.blank(1)
+		p.no_title()
+		p.blank()
 		p.text("DL No:20/110674,21/110675")
 		p.text("GST No:32AAMFM2726K1Z7")
-		p.blank()
-		p.text("Bill number: "+str(billno))
-	p.text("Patient: "+patient)	
-	if doc:p.text("Doctor: "+doc)
-	if ip:p.text("IP #"+str(ip))
-	p.text("date: "+str(date))
+	p.blank()
+	p.text("Patient: {:15.15s}   Date:{:s}".format(patient,date))
+	if not doc: 
+		doc=""
+	p.text("Doctor : {:15.15s}   Bill No:{:d}".format(doc,billno))	
+	if ip:
+		p.text("                           IP:{:s}".format(ip))
 	p.blank(1)
+	p.bold()
+	p.text("  Product             MFR     Qty   Value")
+	p.text("                      Batch   Exp")
+	p.text("-------------------------------------------")
+	p.no_bold()
 	for item in items:
-		p.text('  {:24.24s}:{:%b%y} {:7.2f}'.format(item[0],item[2],item[1]))		
+		p.text('  {:20.20s}{:8.8s}{:4d} {:7.2f}'.format(item[0],item[1],item[3],item[5])) #drugname,manufacturer, batch, quantity,expiry,amount
+		p.text('                      {:8.8s}{:%b%y} '.format(item[2],item[4]))		
 	p.blank(1)
 	blanklines=5-len(items)
 	if blanklines>0:

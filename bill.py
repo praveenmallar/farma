@@ -203,9 +203,12 @@ class Bill(Frame):
 				drug=frame.drug.get()
 				count=frame.drugcount.get()
 				i=0
-				cur.execute("select id from drug where name =%s",[drug])
+				cur.execute("select drug.id,manufacture.name from drug left join manufacture on drug.manufacture=manufacture.id where drug.name =%s",[drug])
 				row=cur.fetchone()
 				drugid=row[0]
+				manufacture=row[1]
+				if not manufacture:
+					manufacture=""
 				dictcur=db.cursor(cdb.dictcursor)
 				dictcur.execute("select id, cur_count,price,cgstp,sgstp,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",[drugid])
 				batches=dictcur.fetchall()
@@ -227,7 +230,7 @@ class Bill(Frame):
 						billtotal=billtotal+saleamount
 						cgst=cgst+saleamount*batch_cgst/100
 						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug+"("+str(batch['cur_count'])+')-'+str(batch['batch']),saleamount,batch['expiry']])  
+						items.append([drug,manufacture,str(batch['batch']),batch['cur_count'],batch['expiry'],saleamount*(1+batch_cgst/100+batch_sgst/100)])  
 					elif count>0:
 						newcount=batch["cur_count"]-count
 						cur.execute("update stock set cur_count=%s where id=%s;",(newcount,batch["id"]))
@@ -237,7 +240,7 @@ class Bill(Frame):
 						billtotal=billtotal+saleamount
 						cgst=cgst+saleamount*batch_cgst/100
 						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug+"("+str(count)+')-'+str(batch['batch']),saleamount,batch['expiry']])  
+						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount]*(1+batch_cgst/100+batch_sgst/100))  
 						count=0
 					else:
 						break						
