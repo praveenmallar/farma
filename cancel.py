@@ -70,7 +70,7 @@ class Cancel(Frame):
 			f.count.set(f.oldcount)
 			comp.NumEntry(f,textvariable=f.count,width=5).pack(side=LEFT,padx=10,pady=10)
 			f.id=row['id']
-			f.price=row['price'] (1+ row['cgstp']/100 + row['sgstp']/100)
+			f.price=row['price']* (1+ row['cgstp']/100 + row['sgstp']/100)
 			self.canvas.create_window(1,1+i*40,window=f,anchor=NW)
 			i=i+1
 			self.items.append(f)
@@ -217,8 +217,8 @@ class Cancel(Frame):
 			rows=cur.fetchall()
 			items=[]
 			for r in rows:
-				price=sell_rate(r["price"],r["discount"])
-				item=(r["drug"],r["manufacture"],r['batch'],r['qty'],r['expiry'],price*(1+r['sgstp']+r['cgstp']))
+				price=float(r['price'])-float(r['price'])*float(r['discount'])/100
+				item=(r["drug"],r["manufacture"],r['batch'],r['qty'],r['expiry'],price*float(1+r['sgstp']+r['cgstp']))
 				items.append(item)
 			sql="select patient.name from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where bill.id=%s and patient.discharged=0;"
 			ip=None

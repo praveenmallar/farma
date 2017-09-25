@@ -100,18 +100,18 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	p.text("Patient: {:15.15s}   Date:{:s}".format(patient,date))
 	if not doc: 
 		doc=""
-	p.text("Doctor : {:15.15s}   Bill No:{:d}".format(doc,billno))	
+	p.text("Doctor : {:15.15s}   Bill No:{:s}".format(doc,str(billno)))	
 	if ip:
 		p.text("                           IP:{:s}".format(ip))
 	p.blank(1)
 	p.bold()
 	p.text("  Product             MFR     Qty   Value")
-	p.text("                      Batch   Exp")
+	p.text("                    Batch     Exp")
 	p.text("-------------------------------------------")
 	p.no_bold()
 	for item in items:
 		p.text('  {:20.20s}{:8.8s}{:4d} {:7.2f}'.format(item[0],item[1],item[3],item[5])) #drugname,manufacturer, batch, quantity,expiry,amount
-		p.text('                      {:8.8s}{:%b%y} '.format(item[2],item[4]))		
+		p.text('                {:14.14s}{:%b%y} '.format(item[2],item[4]))		
 	p.blank(1)
 	blanklines=5-len(items)
 	if blanklines>0:
@@ -121,8 +121,9 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	p.text('  {:30s}{:7.2f}'.format("CGST: ",cgst))
 	p.text('  {:30s}{:7.2f}'.format("SGST: ",sgst))
 	p.blank()
+	p.bold()
 	p.text('  {:30s}{:7.2f}'.format("NET Amount: ",total+cgst+sgst))
-	
+	p.no_bold()
 	p.no_bold()
 	if discount>0:
 		p.blank(1)
