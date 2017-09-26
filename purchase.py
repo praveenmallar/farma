@@ -1,4 +1,5 @@
-from Tkinter import *
+#from Tkinter import *
+from mttkinter.mtTkinter import *
 import connectdb as cdb
 import comp
 import calpicker
@@ -11,7 +12,7 @@ class addStock(Frame):
 
 	def __init__(self, parent=None,*args, **kwargs):
 		if not parent:
-			parent=Tk()
+			parent=Toplevel()
 		Frame.__init__(self,parent,*args,**kwargs)
 		self.items=[]
 		db=cdb.Db().connection()

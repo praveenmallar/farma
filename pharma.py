@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#from mttkinter.mtTkinter import *
 from Tkinter import *
 import bill,purchase,cancel,new,patient,showbills,password,editstock,review,creditnote,group
 import printer as printbill
@@ -9,27 +10,27 @@ import connectdb as cdb
 from bill import print_day_bills as print_daybills
 
 
-class Pharma:
+class Pharma(Tk):
 
 	def __init__(self):
-		self.master=Tk()
+		Tk.__init__(self)
 		self.checkdb()
-		self.master.config(width=600,height=400)
-		self.master.title("Mukunda Pharmacy")
+		self.config(width=600,height=400)
+		self.title("Mukunda Pharmacy")
 		self.addmenus()
 		self.addshortcuts()
 		self.stock=[]
 		self.restock()
-		f=Frame(self.master)
+		f=Frame(self)
 		bill.Bill(self,f).pack()
 		f.pack()
-		self.master.mainloop()
+		self.mainloop()
 
 	def addshortcuts(self):
-		f=Frame(self.master,bd=1,relief=SUNKEN)
+		f=Frame(self,bd=1,relief=SUNKEN)
 		f.pack()
 		photo=PhotoImage(file="./images/bill.png")
-		b=Button(f,image=photo,text="bill",compound=BOTTOM,width=100,height=100,command=lambda:bill.Bill(self))
+		b=Button(f,image=photo,text="bill",compound=BOTTOM,width=100,height=100,command=lambda x=self:bill.Bill(x))
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/purchase.png")
@@ -41,7 +42,7 @@ class Pharma:
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/new.png")
-		b=Button(f,image=photo,text="new",compound=BOTTOM,width=100,height=100,command=lambda:new.adder())
+		b=Button(f,image=photo,text="new",compound=BOTTOM,width=100,height=100,command=lambda :new.adder())
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/patient.png")
@@ -50,7 +51,7 @@ class Pharma:
 		b.image=photo
 			
 	def addmenus(self):
-		menu=Menu(self.master)
+		menu=Menu(self)
 
 		self.debug=BooleanVar()
 		self.debug.set(False)
@@ -85,7 +86,7 @@ class Pharma:
 		adminmenu.add_command(label="Set GST rates",command=self.setgst)
 		menu.add_cascade(label="Admin",menu=adminmenu)
 
-		self.master.config(menu=menu)
+		self.config(menu=menu)
 
 	def editstock(self):
 		if not password.askpass():
@@ -242,8 +243,7 @@ class Pharma:
 		for row in rows:
 			stock.append(row)
 		self.stock=stock
-		self.master.event_generate("<<stock_changed>>")
-		print "restock"
+		self.event_generate("<<stock_changed>>")
 		
 class SetTax (Frame):
 

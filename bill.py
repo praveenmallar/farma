@@ -82,7 +82,7 @@ class Bill(Frame):
 		self.f2=f2=Frame(self)
 		f2.pack(side=TOP,pady=10)
 		self.populateDrugFrame(f2,myfont)
-		self.rw.master.bind("<<stock_changed>>",lambda x=None:self.populateDrugFrame(self.f2,myfont))
+		self.rw.bind("<<stock_changed>>",lambda x=None:self.populateDrugFrame(self.f2,myfont),"+")
 		
 		f=Frame(self)		
 		f.pack(side=LEFT,fill=X,expand=1,padx=10,pady=10)
@@ -140,7 +140,6 @@ class Bill(Frame):
 		self.refreshcanvas()
 	
 	def populateDrugFrame(self,frame,myfont=("Times",10,"bold")):
-		print "populate", frame,myfont
 		try:
 			frame.f2.destroy()
 		except Exception:

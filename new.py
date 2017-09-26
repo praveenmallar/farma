@@ -59,7 +59,10 @@ class addNew(tk.Frame):
 		self.en.focus()
 	
 	def edit(self):
-		oldtx=self.lb.get(self.lb.curselection()[0])
+		oldtx=""
+		sel=self.lb.get(self.lb.curselection())
+		if len(sel)>0:
+			oldtx=sel[0]
 		newtx=self.ed.get()
 		if not askokcancel("Confirm","Change "+oldtx + " to " + newtx + "?",parent=self.master):
 			return
@@ -70,7 +73,11 @@ class addNew(tk.Frame):
 			self.refreshlist()
 			
 	def listboxchanged(self,e):
-		self.ed.set(self.lb.get(self.lb.curselection()[0]))
+		tx=""
+		sel=self.lb.curselection()
+		if len(sel)>0:
+			tx=self.lb.get(sel[0])
+		self.ed.set(tx)
 	
 	def searchtx(self,a,b,c):
 		tx=self.search.get()
@@ -107,8 +114,10 @@ class addDrug(addNew):
 	def listboxchanged(self,e):
 		addNew.listboxchanged(self,e)
 		cur=self.db.cursor()
-		dr=self.lb.get(self.lb.curselection()[0])
-		print dr
+		dr=""
+		sel=self.lb.curselection()
+		if len(sel)>0:
+			dr=self.lb.get(sel[0])
 		cur.execute("select name from manufacture where id in (select manufacture from drug where name=%s);",[dr])
 		if cur.rowcount==1:
 			r=cur.fetchone()
@@ -119,16 +128,20 @@ class addDrug(addNew):
 
 	def edit(self):
 		addNew.edit(self)
-		mfcr=self.comp.get()[1]
+		mfcr=self.comp.get()
+		if mfcr:
+			mfcr=mfcr[1]
+		else:
+			mfcr=0
 		cur=self.db.cursor()
 		cur.execute("update drug set manufacture=%s where name=%s",(mfcr,self.ed.get()))
+		self.db.commit()
 		
 		
 class adder(tk.Frame):
 	def __init__(self,parent=None):
 		if not parent:
-			t=tk.Tk()
-			parent=t
+			parent=tk.Toplevel()
 		tk.Frame.__init__(self,parent)
 		addNew(self, table="doc",field="name",title="Add Doctor").pack(side="left")
 		addNew(self, table="stockist",field="name",title="Add Stockist").pack(side="left")
