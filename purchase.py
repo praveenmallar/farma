@@ -10,11 +10,13 @@ import datetime as dt
 
 class addStock(Frame):
 
-	def __init__(self, parent=None,*args, **kwargs):
+	def __init__(self,master=None, parent=None,*args, **kwargs):
 		if not parent:
-			parent=Toplevel()
+			parent=Toplevel(master)
 		Frame.__init__(self,parent,*args,**kwargs)
+		self.master=master
 		self.items=[]
+		parent.title("Purchase")
 		db=cdb.Db().connection()
 		cursor = db.cursor()
 		cursor.execute("select * from stockist")
@@ -235,6 +237,7 @@ class addStock(Frame):
 			sh['purchase']=curpurchase+float(total)
 			self.items=[]
 			self.refreshcanvas()
+			self.master.restock()
 			self.drug.focus()
 
 		except cdb.mdb.Error,e:

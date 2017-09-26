@@ -45,7 +45,7 @@ def sell_rate(mrp,discount):
 class Bill(Frame):
 	def __init__(self,master=None,parent=None):
 		if not parent:
-			parent=Tk()
+			parent=Toplevel(master)
 		Frame.__init__(self,parent)
 		self.rw=master
 		try:

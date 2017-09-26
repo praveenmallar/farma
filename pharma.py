@@ -34,7 +34,7 @@ class Pharma(Tk):
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/purchase.png")
-		b=Button(f,image=photo,text="purchase",compound=BOTTOM,width=100,height=100,command=lambda:purchase.addStock())
+		b=Button(f,image=photo,text="purchase",compound=BOTTOM,width=100,height=100,command=lambda x=self:purchase.addStock(x))
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/return.png")
