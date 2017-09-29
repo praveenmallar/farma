@@ -9,8 +9,7 @@ import shelve
 class Patient(Frame):
 	def __init__(self,parent=None):
 		if not parent:
-			t=Toplevel()
-			parent = t
+			parent=Toplevel()
 		Frame.__init__(self,parent)
 		b=PatientDetails(self)
 		a=PatientList(self,b)
@@ -39,7 +38,7 @@ def addPatient(ip,name):
 	con=cdb.Db().connection()
 	cur=con.cursor()
 	try:	
-		cur.execute("insert into patient (name) values(%s)",(name))
+		cur.execute("insert into patient (name) values(%s)",[name])
 		con.commit()
 	except cdb.Error (e):
 		print "error %d : %s" %(e.args[0],e.args[1])
@@ -53,9 +52,9 @@ def removePatient(id,name,ip):
 	sql="update patient set discharged=1 where id=%s;"
 	con=cdb.Db().connection()
 	cur=con.cursor()
-	cur.execute(sql,(id))
+	cur.execute(sql,[id])
 	sql="select bill.id, bill.net, bill.date from bill join credit on bill.id=credit.billid join patient on patient.id=credit.patientid where patient.id=%s"
-	cur.execute(sql,(id))
+	cur.execute(sql,[id])
 	result=cur.fetchall()
 	billtotal=0
 	output.append(" ")
@@ -174,7 +173,7 @@ class PatientDetails(Frame):
 		sql="select bill.id as bill, bill.name as patient, bill.date as date, bill.net as amount from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where patient.id=%s;"
 		cur=cdb.Db().connection().cursor()
 		try:
-			cur.execute(sql,(id))
+			cur.execute(sql,[id])
 		except cdb.mdb.Error as e:
 			tkMessageBox.showerror("Error "+str(e.args[0]), e.args[1],parent=self.master)
 			return

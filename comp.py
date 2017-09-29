@@ -59,6 +59,9 @@ class myComp(Frame):
 			text=""	
 		if len(text)>0: return text
 		else: return None
+		
+	def set(self,text):
+		self.text.set(text)
 
 	def changeList(self,listitems=[]):
 		self.listitems=listitems
@@ -168,4 +171,5 @@ if __name__=="__main__":
 	c=NumEntry(root)
 	c.pack()
 	a.focus()
+	a.set("i")
 	root.mainloop()	

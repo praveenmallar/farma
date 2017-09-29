@@ -72,7 +72,7 @@ class Group(Frame):
 		group=self.groups.get()[1]
 		cur=cdb.Db().connection().cursor()
 		cur.execute("select drug.name,drug.id,druggroup.groupid,groups.name from drug join druggroup on druggroup.drug=drug.id "\
-			" join groups on druggroup.groupid=groups.id where druggroup.groupid=%s;",(group))
+			" join groups on druggroup.groupid=groups.id where druggroup.groupid=%s;",[group])
 		rows=cur.fetchall()
 		items=[]
 		for r in rows:
@@ -106,7 +106,7 @@ class Group(Frame):
 		grp=self.newGroup.get()
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		cur.execute("insert into groups (name) values(%s);",(grp))
+		cur.execute("insert into groups (name) values(%s);",[grp])
 		con.commit()
 		self.loadgroups()
 		self.newGroup.set("")
@@ -117,10 +117,10 @@ class Group(Frame):
 			return
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		cur.execute("delete from groups where id=%s;",(grp[1]))
+		cur.execute("delete from groups where id=%s;",[grp[1]])
 		con.commit()
 		self.loadgroups()
 
 if __name__=="__main__":
-	g=Group()
+	g=Group(Tk())
 	g.mainloop()

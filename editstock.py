@@ -31,7 +31,7 @@ class EditStock(Frame):
 		f2.pack(side=LEFT)
 		sb=Scrollbar(f2)
 		sb.pack(side=RIGHT,fill=Y)
-		self.can=Canvas(f2,height=400,width=600,bd=1,relief=SUNKEN,yscrollcommand=sb.set)
+		self.can=Canvas(f2,height=400,width=800,bd=1,relief=SUNKEN,yscrollcommand=sb.set)
 		self.can.pack()
 		sb.config(command=self.can.yview)
 
@@ -42,36 +42,52 @@ class EditStock(Frame):
 		self.editcan=Canvas(f3,relief=RAISED,yscrollcommand=sb.set)
 		self.editcan.pack()
 		sb.config(command=self.editcan.yview)
+		
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select name, id from manufacture order by name;")
+		rows=cur.fetchall()
+		self.mfrs=[["",-1]]
+		for r in rows:
+			self.mfrs.append([r[0],r[1]])
 			
 	def refresh(self):
 		drug=self.drug.get()
 		self.can.delete(ALL)
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		sql="select drug.name,stock.id,stock.start_count, stock.cur_count,stock.batch,stock.price, stock.tax, stock.discount, stock.expiry from drug join stock on drug.id=stock.drug_id where drug.name=%s order by stock.id desc;"
-		cur.execute(sql,(drug))
+		sql="select drug.name,drug.manufacture,stock.id,stock.start_count, stock.cur_count,stock.batch,stock.price, stock.cgstp, stock.sgstp, stock.discount, stock.expiry from drug join stock on drug.id=stock.drug_id where drug.name=%s order by stock.id desc;"
+		cur.execute(sql,[drug])
 		rows=cur.fetchall()
 		i=1
 		f=Frame(self.can,bd=1)
 		Label(f,text="drug",width=20).pack(side=LEFT)
+		Label(f,text="manufacture",width=15).pack(side=LEFT)
 		Label(f,text="batch",width=10).pack(side=LEFT)
 		Label(f,text="count",width=5).pack(side=LEFT)
 		Label(f,text="stock",width=5).pack(side=LEFT)
 		Label(f,text="price",width=7).pack(side=LEFT)
-		Label(f,text="tax",width=4).pack(side=LEFT)
+		Label(f,text="cgst",width=4).pack(side=LEFT)
+		Label(f,text="sgst",width=4).pack(side=LEFT)
 		Label(f,text="disc",width=4).pack(side=LEFT)
 		Label(f,text="expiry",width=10).pack(side=LEFT)
 		self.can.create_window(5,5,window=f,anchor=NW)
 		for row in rows:
 			f=Frame(self.can,bd=1,relief=RIDGE)
+			mfr=row[1]
+			for fr in self.mfrs:
+				if mfr==fr[1]:
+					mfr=fr[0]
+					break
 			Label(f,text=row[0],width=20).pack(side=LEFT)
-			Label(f,text=row[4],width=10).pack(side=LEFT)
-			Label(f,text=row[2],width=5).pack(side=LEFT)
+			Label(f,text=mfr,width=15).pack(side=LEFT)
+			Label(f,text=row[5],width=10).pack(side=LEFT)
 			Label(f,text=row[3],width=5).pack(side=LEFT)
-			Label(f,text=row[5],width=7).pack(side=LEFT)
-			Label(f,text=row[6],width=4).pack(side=LEFT)
+			Label(f,text=row[4],width=5).pack(side=LEFT)
+			Label(f,text=row[6],width=7).pack(side=LEFT)
 			Label(f,text=row[7],width=4).pack(side=LEFT)
-			Label(f,text=row[8],width=10).pack(side=LEFT)
+			Label(f,text=row[8],width=4).pack(side=LEFT)
+			Label(f,text=row[9],width=4).pack(side=LEFT)
+			Label(f,text=row[10],width=10).pack(side=LEFT)
 			Button(f,text="edit",command=lambda x=row[1]:self.edit(x)).pack(side=LEFT)
 			self.can.create_window(5,5+i*30,window=f,anchor=NW)
 			i+=1
@@ -88,8 +104,8 @@ class EditStock(Frame):
 		f=Frame(self.editcan)
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		sql="select drug.name,stock.id,stock.start_count, stock.cur_count,stock.batch,stock.price, stock.tax, stock.discount, stock.expiry from drug join stock on drug.id=stock.drug_id where stock.id=%s;"
-		cur.execute(sql,(id))
+		sql="select drug.name,manufacture.name,stock.id,stock.start_count, stock.cur_count,stock.batch,stock.price, stock.cgstp,stock.sgstp, stock.discount, stock.expiry from drug join stock on drug.id=stock.drug_id left join manufacture on drug.manufacture=manufacture.id where stock.id=%s;"
+		cur.execute(sql,[id])
 		row=cur.fetchone()
 		Label(f,text="drug").grid(row=0,column=0,sticky=E,padx=10,pady=5)
 		Label(f,text=row[0]).grid(row=0,column=1,sticky=W,padx=10,pady=5)
@@ -130,4 +146,4 @@ class EditStock(Frame):
 		self.refresh()	
 
 if __name__=="__main__":
-	EditStock().mainloop()
+	EditStock(Tk()).mainloop()
