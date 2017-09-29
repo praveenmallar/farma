@@ -165,7 +165,10 @@ class Bill(Frame):
 	def addbill(self,event=None):
 		db=cdb.Db().connection()
 		cur = db.cursor()
-		patient=self.varPatient.get()
+		patient=self.varPatient.get().strip()
+		if len(patient)==0:
+			tkMessageBox.showerror("Error","Enter Patient's name")
+			return
 		doc=None
 		IP=None
 		ip=None

@@ -116,6 +116,7 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	blanklines=5-len(items)
 	if blanklines>0:
 		p.blank(blanklines)
+	p.text("-------------------------------------------")
 	p.bold()
 	p.text('  {:30s}{:7.2f}'.format("TOTAL: ",total))
 	p.text('  {:30s}{:7.2f}'.format("CGST: ",cgst))
