@@ -148,8 +148,8 @@ class addStock(Frame):
 		self.rate.delete(0,END)
 		self.mrp.delete(0,END)
 		self.disc.set(0)
-		self.cgst.set(0)
-		self.sgst.set(0)
+		self.cgstp.set(0)
+		self.sgstp.set(0)
 		self.drug.focus()
 
 	def refreshcanvas(self):
@@ -189,7 +189,7 @@ class addStock(Frame):
 			billid=cur.lastrowid
 			billtotal=0
 			printout=["","","PURCHASE","",stockist,"bill: "+billno,""]
-			printout.append("{0:12s}{1:4s}{2:8s}{3:8s}{4:6s}{5:4s}{6:5}".format("drug","ct","rate","mrp","exp","stk","sl"))
+			printout.append("{0:12s}{1:4s}{2:8s}{3:8s}{4:4s}{5:6s}{6:4s}{7:5}".format("drug","ct","rate","mrp","gst","exp","stk","sl"))
 			for f in self.items:
 				drug=f.drug
 				batch=f.batch
@@ -224,7 +224,7 @@ class addStock(Frame):
 				billtotal=billtotal+count*rate
 				if gstbill==1:
 					mrp=f.mrp
-				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:%b%y}-{5:3d}-{6:4d}".format(drug,int(count),float(rate),float(mrp), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
+				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:4.4s}-{5:%b%y}-{6:3d}-{7:4d}".format(drug,int(count),float(rate),float(mrp),str(int(f.cgst))+str(int(f.sgst)), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
 			db.commit()
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])
