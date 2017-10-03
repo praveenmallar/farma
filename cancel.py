@@ -9,8 +9,7 @@ class Cancel(Frame):
 		
 	def __init__(self,parent=None,*arg,**karg):
 		if not parent:
-			t=Toplevel()
-			parent=t
+			parent=Toplevel()
 		Frame.__init__(self,parent,*arg,**karg)
 		self.pack()
 		self.master.title("Cancel Bill")
@@ -114,7 +113,7 @@ class Cancel(Frame):
 			con.commit()
 			if not ip:
 				printbill.printinfo(printout)
-				self.reprint(cur)
+				self.reprint()
 				sh=shelve.open("data.db")
 				try:
 					billreturn=sh['return']
@@ -231,8 +230,7 @@ class Cancel(Frame):
 		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['cgst'],biller['sgst'],biller['items'],biller['ip'])
 		
 if __name__=="__main__":
-	f=Cancel()
-	f.pack()
+	f=Cancel(Tk())
 	f.mainloop()
 
 
