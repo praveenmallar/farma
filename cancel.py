@@ -7,12 +7,14 @@ import shelve
 
 class Cancel(Frame):
 		
-	def __init__(self,parent=None,*arg,**karg):
+	def __init__(self,master=None,parent=None,*arg,**karg):
 		if not parent:
 			parent=Toplevel()
 		Frame.__init__(self,parent,*arg,**karg)
+		self.master=master
+		self.parent=parent
 		self.pack()
-		self.master.title("Cancel Bill")
+		parent.title("Cancel Bill")
 		f1=Frame(self)  							#search frame		
 		f1.pack(side=TOP,padx=15,pady=10,ipadx=20,ipady=10)
 		Label(f1,text="Bill Number").pack(side=LEFT)
@@ -80,7 +82,7 @@ class Cancel(Frame):
 		self.reprintbutton.configure(state=NORMAL)
 
 	def updatebill(self):
-		if not tkMessageBox.askyesno("confirm update","Are you sure you want to modify bill "+str(self.curbill),parent=self.master):
+		if not tkMessageBox.askyesno("confirm update","Are you sure you want to modify bill "+str(self.curbill),parent=self.parent):
 			return
 		self.billno.set(self.curbill)
 		con=cdb.Db().connection()
@@ -111,6 +113,7 @@ class Cancel(Frame):
 				cur.execute(sql,(str(returnamount),str(self.curbill)))				
 				printout.extend((""," RETURN AMOUNT:   "+str(returnamount)))
 			con.commit()
+			self.master.restock()
 			if not ip:
 				printbill.printinfo(printout)
 				self.reprint()
@@ -131,7 +134,7 @@ class Cancel(Frame):
 			self.searchbill()
 
 	def cancelbill(self):
-		if not tkMessageBox.askyesno("confirm Cancel","Are you sure you want to cancel bill "+str(self.curbill),parent=self.master):
+		if not tkMessageBox.askyesno("confirm Cancel","Are you sure you want to cancel bill "+str(self.curbill),parent=self.parent):
 			return
 		self.billno.set(self.curbill)
 		con=cdb.Db().connection()
@@ -160,6 +163,7 @@ class Cancel(Frame):
 			sql="update bill set net=0 where id=%s;"
 			cur.execute(sql,[self.curbill])
 			con.commit()
+			self.master.restock()
 			if not ip:
 				printout=[]
 				printout.extend(printbill.header)

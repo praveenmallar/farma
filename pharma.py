@@ -38,7 +38,7 @@ class Pharma(Tk):
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/return.png")
-		b=Button(f,image=photo,text="cancel",compound=BOTTOM,width=100,height=100,command=lambda:cancel.Cancel())
+		b=Button(f,image=photo,text="cancel",compound=BOTTOM,width=100,height=100,command=lambda x=self:cancel.Cancel(x))
 		b.pack(side=LEFT)
 		b.image=photo
 		photo=PhotoImage(file="./images/new.png")

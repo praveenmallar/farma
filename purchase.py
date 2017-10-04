@@ -14,6 +14,7 @@ class addStock(Frame):
 		if not parent:
 			parent=Toplevel(master)
 		Frame.__init__(self,parent,*args,**kwargs)
+		self.parent=parent
 		self.master=master
 		self.items=[]
 		parent.title("Purchase")
@@ -119,7 +120,7 @@ class addStock(Frame):
 			if f.cgst==0 or f.sgst==0:
 				raise ValueError("cgst or sgst cant be 0")
 		except ValueError:
-			tkMessageBox.showerror("Error","error in GST")
+			tkMessageBox.showerror("Error","error in GST",parent=self.parent)
 			return			
 		f.drug=self.drug.get()
 		Label(f,width=20,height=1,text=f.drug).pack(side=LEFT)
@@ -168,6 +169,8 @@ class addStock(Frame):
 		
 		
 	def addbill(self,event=None):
+		if not  tkMessageBox.askyesno("Confirm","Save the purchase?",parent=self.parent):
+			return 
 		db=cdb.Db().connection()
 		cur = db.cursor()
 
@@ -241,7 +244,7 @@ class addStock(Frame):
 			self.drug.focus()
 
 		except cdb.mdb.Error,e:
-			tkMessageBox.showerror("Error in database:", "error %d: %s" %(e.args[0],e.args[1]),parent=self.master)
+			tkMessageBox.showerror("Error in database:", "error %d: %s" %(e.args[0],e.args[1]),parent=self.parent)
 			if db:
 				db.rollback()
 		finally :
