@@ -6,7 +6,7 @@ from comp import myComp2
 class addNew(tk.Frame):
 
 	def __init__(self,parent=None,table="doc",field="name",title="Add New"):	
-		tk.Frame.__init__(self,parent)		
+		tk.Frame.__init__(self,parent)
 		self.search=tk.StringVar()
 		tk.Entry(self,textvariable=self.search).pack(side=tk.TOP,fill=tk.X)
 		self.search.trace("w",self.searchtx)
@@ -62,7 +62,7 @@ class addNew(tk.Frame):
 		oldtx=""
 		sel=self.lb.get(self.lb.curselection())
 		if len(sel)>0:
-			oldtx=sel[0]
+			oldtx=sel
 		newtx=self.ed.get()
 		if not askokcancel("Confirm","Change "+oldtx + " to " + newtx + "?",parent=self.master):
 			return

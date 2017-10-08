@@ -232,7 +232,7 @@ class Bill(Frame):
 						billtotal=billtotal+saleamount
 						cgst=cgst+saleamount*batch_cgst/100
 						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug,manufacture,str(batch['batch']),batch['cur_count'],batch['expiry'],saleamount*(1+batch_cgst/100+batch_sgst/100)])  
+						items.append([drug,manufacture,str(batch['batch']),batch['cur_count'],batch['expiry'],saleamount])  
 					elif count>0:
 						newcount=batch["cur_count"]-count
 						cur.execute("update stock set cur_count=%s where id=%s;",(newcount,batch["id"]))
@@ -242,7 +242,7 @@ class Bill(Frame):
 						billtotal=billtotal+saleamount
 						cgst=cgst+saleamount*batch_cgst/100
 						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount*(1+batch_cgst/100+batch_sgst/100)])  
+						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount])  
 						count=0
 					else:
 						break						
