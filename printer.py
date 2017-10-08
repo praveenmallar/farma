@@ -97,7 +97,8 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 		p.text("DL No:20/110674,21/110675")
 		p.text("GST No:32AAMFM2726K1Z7")
 	p.blank()
-	p.text("Patient: {:15.15s}   Date:{:s}".format(patient,date))
+	print date
+	p.text("Patient: {:15.15s}   Date:{:%d-%b,%y}".format(patient,date))
 	if not doc: 
 		doc=""
 	p.text("Doctor : {:15.15s}   Bill No:{:s}".format(doc,str(billno)))	

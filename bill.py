@@ -166,9 +166,6 @@ class Bill(Frame):
 		db=cdb.Db().connection()
 		cur = db.cursor()
 		patient=self.varPatient.get().strip()
-		if len(patient)==0:
-			tkMessageBox.showerror("Error","Enter Patient's name")
-			return
 		doc=None
 		IP=None
 		ip=None
@@ -181,6 +178,9 @@ class Bill(Frame):
 				patient=ip[0].split(" :")[0]
 				IP=ip[0].split(" :")[1]
 				patientid=ip[1]
+		if len(patient)==0 and not ip:
+			tkMessageBox.showerror("Error","Enter Patient's name",parent=self)
+			return
 		date=dt.date.today()
 		
 		try:
@@ -254,7 +254,7 @@ class Bill(Frame):
 			if ip:		
 				cur.execute("insert into credit(patientid,billid) values(%s,%s);",(patientid,billid))
 			db.commit()
-			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,IP,selfbill)
+			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,ip=IP,selfbill=selfbill)
 			sh=shelve.open("data.db")
 			if selfbill==0:			
 				if ip:
@@ -277,7 +277,7 @@ class Bill(Frame):
 			self.selfbill.set(0)
 			self.rw.restock()
 		except cdb.mdb.Error as e:
-			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self.master)
+			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self)
 			if db:
 				db.rollback()
 		finally :

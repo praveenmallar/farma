@@ -48,7 +48,7 @@ class addNew(tk.Frame):
 	def addnew(self):
 		cursor=self.db.cursor()
 		newentry = self.tx.get()
-		if askokcancel("Confirm", "Do you want to insert - {0}".format(newentry),parent=self.master):
+		if askokcancel("Confirm", "Do you want to insert - {0}".format(newentry),parent=self):
 			cursor.execute ("select * from "+self.table+" where "+self.field+"='"+newentry+"'")
 			if cursor.rowcount==0:		
 				cursor.execute("insert into "+self.table+"("+self.field+") values('"+self.tx.get()+"');")
@@ -64,13 +64,16 @@ class addNew(tk.Frame):
 		if len(sel)>0:
 			oldtx=sel
 		newtx=self.ed.get()
-		if not askokcancel("Confirm","Change "+oldtx + " to " + newtx + "?",parent=self.master):
+		if not askokcancel("Confirm","Change "+oldtx + " to " + newtx + "?",parent=self):
 			return
 		cursor=self.db.cursor()
 		sql="update "+self.table+" set "+self.field+"=%s where "+self.field+"=%s;"
 		if cursor.execute(sql,[newtx,oldtx]):
 			self.ed.set("")
 			self.refreshlist()
+		self.db.commit()
+		self.refreshlist()
+		self.ed.set("")
 			
 	def listboxchanged(self,e):
 		tx=""
@@ -127,14 +130,16 @@ class addDrug(addNew):
 		self.comp.text.set(r)
 
 	def edit(self):
+		drg=self.ed.get()
 		addNew.edit(self)
 		mfcr=self.comp.get()
 		if mfcr:
 			mfcr=mfcr[1]
 		else:
 			mfcr=0
+		print drg,mfcr
 		cur=self.db.cursor()
-		cur.execute("update drug set manufacture=%s where name=%s",(mfcr,self.ed.get()))
+		cur.execute("update drug set manufacture=%s where name=%s",(mfcr,drg))
 		self.db.commit()
 		
 		
