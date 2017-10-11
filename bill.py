@@ -179,8 +179,8 @@ class Bill(Frame):
 				IP=ip[0].split(" :")[1]
 				patientid=ip[1]
 		if len(patient)==0 and not ip:
-			tkMessageBox.showerror("Error","Enter Patient's name",parent=self)
-			return
+			tkMessageBox.showerror("Error","Enter Patient's name")
+			return		
 		date=dt.date.today()
 		
 		try:
@@ -277,7 +277,7 @@ class Bill(Frame):
 			self.selfbill.set(0)
 			self.rw.restock()
 		except cdb.mdb.Error as e:
-			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self)
+			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self.master)
 			if db:
 				db.rollback()
 		finally :

@@ -1,5 +1,5 @@
-#from Tkinter import *
-from mttkinter.mtTkinter import *
+from Tkinter import *
+#from mttkinter.mtTkinter import *
 import connectdb as cdb
 import comp
 import calpicker
