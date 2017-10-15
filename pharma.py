@@ -24,6 +24,7 @@ class Pharma(Tk):
 		f=Frame(self)
 		bill.Bill(self,f).pack()
 		f.pack()
+		self.addstatus()
 		self.mainloop()
 
 	def addshortcuts(self):
@@ -87,7 +88,28 @@ class Pharma(Tk):
 		menu.add_cascade(label="Admin",menu=adminmenu)
 
 		self.config(menu=menu)
-
+		
+	def addstatus(self):
+		f=Frame(self,border=3,relief=RIDGE)
+		f.pack(side=BOTTOM,expand=1,fill=X)
+		self.statusSale=IntVar()
+		self.statusSale.set(0)
+		self.statusIp=IntVar()
+		self.statusIp.set(0)
+		Label(f,text="Sale : ").pack(side=LEFT,padx=20)
+		Label(f,textvariable=self.statusSale).pack(side=LEFT)
+		Label(f,text="IP sale = ").pack(side=LEFT,padx=20)
+		Label(f,textvariable=self.statusIp).pack(side=LEFT)
+		self.restatus()
+	
+	def restatus(self):
+		sh=shelve.open("data.db")
+		ipsale=sh["ipsale"]
+		sale=sh["sale"]
+		self.statusSale.set(int(sale))
+		self.statusIp.set(int(ipsale))
+		sh.close()
+		
 	def editstock(self):
 		if not password.askpass():
 			return
@@ -123,6 +145,10 @@ class Pharma(Tk):
 		sh['selfsale']=0
 		sh['discharge']=0
 		sh['lastprint']=lastbill
+		self.statusSale.set(sh['sale'])
+		self.statusIp.set(sh['ipsale'])
+		sh.close()
+		self.restatus()
 	
 	def monthreport(self):
 		if not password.askpass("admin"):

@@ -123,6 +123,7 @@ class Cancel(Frame):
 				except:
 					billreturn=0
 				sh['return']=float(billreturn)+float(returnamount)
+				sh.close()
 			else:
 				tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill",parent=self.master)
 
@@ -175,7 +176,8 @@ class Cancel(Frame):
 					billreturn=sh['return']
 				except:
 					billreturn=0
-				sh['return']=float(billreturn)+float(returnamount)			
+				sh['return']=float(billreturn)+float(returnamount)	
+				sh.close()		
 			else:
 				tkMessageBox.showinfo("Bill Cancelled","Refund only if bill is not IP",parent=self.master)
 			
@@ -185,6 +187,7 @@ class Cancel(Frame):
 		finally:
 			con.close()
 			self.searchbill()
+			sh.close()
 
 	def isexpired(self,sale,cur):
 		sql="select stock.id from sale join stock on sale.stock=stock.id where stock.expiry>curdate()+interval 30 day and sale.id= %s;"
@@ -228,10 +231,10 @@ class Cancel(Frame):
 			cur.execute(sql,[billno])
 			if cur.rowcount>0:
 				r=cur.fetchone()
-				f=r[0].split("::")
+				f=r["name"].split("::")
 				ip=f[0]
 			biller={"billno":str(billno)+ "  COPY","patient":patient,"doc":doc,"date":date,"total":total,"items":items,"ip":ip,"cgst":cgst,"sgst":sgst}
-		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['cgst'],biller['sgst'],biller['items'],biller['ip'])
+		printbill.printbill(biller['billno'],biller['patient'],biller['doc'],biller['date'],biller['total'],biller['cgst'],biller['sgst'],biller['items'],ip=biller['ip'])
 		
 if __name__=="__main__":
 	f=Cancel(Tk())

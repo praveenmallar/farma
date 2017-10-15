@@ -269,6 +269,8 @@ class Bill(Frame):
 			except:
 				cursale=0
 			sh[token]=float(cursale)+float(billtotal+cgst+sgst)
+			sh.close()
+			self.rw.restatus()	
 			self.items=[]
 			self.refreshcanvas()
 			self.varPatient.set("")
