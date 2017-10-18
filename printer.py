@@ -104,11 +104,11 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	if ip:
 		p.text("                           IP:{}".format(ip))
 	p.blank(1)
-	p.text("-------------------------------------------")
+	p.text("-"*43)
 	p.bold()
 	p.text("  Product             MFR     Qty   Value")
 	p.text("                    Batch     Exp")
-	p.text("-------------------------------------------")
+	p.text("-"*43)
 	p.no_bold()
 	for item in items:
 		p.text('  {:20.20s}{:8.8s}{:4d} {:7.2f}'.format(item[0],item[1],item[3],item[5])) #drugname,manufacturer, batch, quantity,expiry,amount
@@ -117,7 +117,7 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	blanklines=5-len(items)
 	if blanklines>0:
 		p.blank(blanklines)
-	p.text("-------------------------------------------")
+	p.text("-"*43)
 	p.bold()
 	p.text('  {:30s}{:7.2f}'.format("TOTAL: ",total))
 	p.text('  {:30s}{:7.2f}'.format("CGST: ",cgst))
