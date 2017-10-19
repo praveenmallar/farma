@@ -135,7 +135,7 @@ class Cancel(Frame):
 				tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill",parent=self.parent)
 
 		except cdb.mdb.Error as e:						
-			tkMessageBox.showerror("Error "+str(e.args[0]),e.	args[1],parent=self.master)
+			tkMessageBox.showerror("Error "+str(e.args[0]),e.	args[1],parent=self.parent)
 			con.rollback()
 		finally:
 			con.close()
@@ -150,7 +150,7 @@ class Cancel(Frame):
 		sql="select sale.id from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where stock.expiry < curdate() + interval 30 day and bill.id= %s;"
 		cur.execute(sql,[str(self.curbill)])
 		if cur.rowcount>0:
-			tkMessageBox.showerror("Can not cancel bill","looks like one of the item is near expiry",parent=self.master)
+			tkMessageBox.showerror("Can not cancel bill","looks like one of the item is near expiry",parent=self.parent)
 			return
 		try:
 			ip=False
@@ -189,15 +189,14 @@ class Cancel(Frame):
 				sh['bills']=myar
 				sh.close()		
 			else:
-				tkMessageBox.showinfo("Bill Cancelled","Refund only if bill is not IP",parent=self.master)
+				tkMessageBox.showinfo("Bill Cancelled","Refund only if bill is not IP",parent=self.parent)
 			
 		except cdb.mdb.Error as e:
-			tkMessageBox.showerror("Error "+str(e.args[0]),e.	args[1],parent=self.master)
+			tkMessageBox.showerror("Error "+str(e.args[0]),e.	args[1],parent=self.parent)
 			con.rollback()
 		finally:
 			con.close()
 			self.searchbill()
-			sh.close()
 
 	def isexpired(self,sale,cur):
 		sql="select stock.id from sale join stock on sale.stock=stock.id where stock.expiry>curdate()+interval 30 day and sale.id= %s;"

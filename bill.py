@@ -275,9 +275,7 @@ class Bill(Frame):
 			sh[token]=float(cursale)+float(billtotal+cgst+sgst)
 			if selfbill==0:
 				myar=sh['bills']
-				print myar
 				myar[token].append((billid,billtotal+cgst+sgst))
-				print myar
 				sh['bills']=myar
 			sh.close()
 			self.rw.restatus()	

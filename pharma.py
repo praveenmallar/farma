@@ -142,6 +142,7 @@ class Pharma(Tk):
 		lines.append('discharge:'+"{0:.2f}".format(sh['discharge']))
 		lines.append('purchase :'+"{0:.2f}".format(sh['purchase']))
 		lines.append("")
+		csvstring="{},{},{},{},{},{},{},{},{}\n".format (str(dt.date.today()),lastprint+1,lastbill,sh['sale'],sh['ipsale'],sh['selfsale'],sh['return'],sh['discharge'],sh['purchase'])
 		for l in myar['sale'] :
 			lines.append(" {:7d} - {:8.2f}".format(l[0],l[1]))
 		printbill.printinfo(lines)
@@ -157,6 +158,12 @@ class Pharma(Tk):
 		myar={"sale":[],"ipsale":[]}
 		sh['bills']=myar
 		sh.close()
+		try:
+			fil=open("dayreports.csv","a")
+			fil.write(csvstring)
+			fil.close()
+		except:
+			pass
 		self.restatus()
 	
 	def monthreport(self):
