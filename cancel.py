@@ -122,10 +122,17 @@ class Cancel(Frame):
 					billreturn=sh['return']
 				except:
 					billreturn=0
+				try:
+					bills=sh["bills"]
+				except:
+					sh['bills']={"sale":[],"ipsale":[]}
 				sh['return']=float(billreturn)+float(returnamount)
+				myar=sh['bills']
+				myar['sale'].append([self.curbill,-(returnamount)])
+				sh['bills']=myar
 				sh.close()
 			else:
-				tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill",parent=self.master)
+				tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill",parent=self.parent)
 
 		except cdb.mdb.Error as e:						
 			tkMessageBox.showerror("Error "+str(e.args[0]),e.	args[1],parent=self.master)
@@ -177,6 +184,9 @@ class Cancel(Frame):
 				except:
 					billreturn=0
 				sh['return']=float(billreturn)+float(returnamount)	
+				myar=sh['bills']
+				myar['sale'].append([self.curbill,-(returnamount)])
+				sh['bills']=myar
 				sh.close()		
 			else:
 				tkMessageBox.showinfo("Bill Cancelled","Refund only if bill is not IP",parent=self.master)
@@ -224,7 +234,7 @@ class Cancel(Frame):
 			items=[]
 			for r in rows:
 				price=float(r['price'])-float(r['price'])*float(r['discount'])/100
-				item=(r["drug"],r["manufacture"],r['batch'],r['qty'],r['expiry'],price*float(1+r['sgstp']+r['cgstp']))
+				item=(r["drug"],r["manufacture"],r['batch'],r['qty'],r['expiry'],price*r['qty'])
 				items.append(item)
 			sql="select patient.name from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where bill.id=%s and patient.discharged=0;"
 			ip=None

@@ -129,6 +129,10 @@ class Pharma(Tk):
 			lastprint=sh['lastprint']
 		except:
 			lastprint=0
+		try:
+			myar=sh['bills']
+		except:
+			myar=sh['bills']={"sale":[],"ipsale":[]}
 		lines.append("report from bill#"+str(lastprint+1)+ " to #"+str(lastbill))
 		lines.append("")
 		lines.append('sale     :'+"{0:.2f}".format(sh['sale']))
@@ -137,6 +141,9 @@ class Pharma(Tk):
 		lines.append('return   :'+"{0:.2f}".format(sh['return']))
 		lines.append('discharge:'+"{0:.2f}".format(sh['discharge']))
 		lines.append('purchase :'+"{0:.2f}".format(sh['purchase']))
+		lines.append("")
+		for l in myar['sale'] :
+			lines.append(" {:7d} - {:8.2f}".format(l[0],l[1]))
 		printbill.printinfo(lines)
 		sh['sale']=0
 		sh['purchase']=0
@@ -147,6 +154,8 @@ class Pharma(Tk):
 		sh['lastprint']=lastbill
 		self.statusSale.set(sh['sale'])
 		self.statusIp.set(sh['ipsale'])
+		myar={"sale":[],"ipsale":[]}
+		sh['bills']=myar
 		sh.close()
 		self.restatus()
 	
