@@ -223,29 +223,26 @@ class Bill(Frame):
 						batch_sgst=float(batch['sgstp'])
 					else:
 						batch_sgst=0	
+					
 					if count>batch["cur_count"]:
-						count=count-batch["cur_count"]
-						cur.execute("update stock set cur_count=0 where id=%s;",[batch["id"]])
-						if selfbill==0:
-							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);", (batch["id"],billid,batch["cur_count"]))
-						saleamount=batch["cur_count"]*sell_rate(batch['price'],batch['discount'])
-						billtotal=billtotal+saleamount
-						cgst=cgst+saleamount*batch_cgst/100
-						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug,manufacture,str(batch['batch']),batch['cur_count'],batch['expiry'],saleamount])  
+						salecount=batch["cur_count"]
+						batchcount=0
+						count=count-batch['cur_count']
 					elif count>0:
-						newcount=batch["cur_count"]-count
-						cur.execute("update stock set cur_count=%s where id=%s;",(newcount,batch["id"]))
-						if selfbill==0:
-							cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch["id"],billid,count))
-						saleamount=count*sell_rate(batch['price'],batch['discount'])
-						billtotal=billtotal+saleamount
-						cgst=cgst+saleamount*batch_cgst/100
-						sgst=sgst+saleamount*batch_sgst/100
-						items.append([drug,manufacture,str(batch['batch']),count,batch['expiry'],saleamount])  
+						salecount=count
+						batchcount=batch['cur_count']-count
 						count=0
 					else:
-						break						
+						break
+					cur.execute("update stock set cur_count=%s where id=%s;",(batchcount,batch['id']))
+					if selfbill==0:
+						cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch['id'],billid,salecount))
+					saleamount=salecount*sell_rate(batch['price'],batch['discount'])
+					billtotal=billtotal+saleamount
+					cgst=cgst+saleamount*batch_cgst/100
+					sgst=sgst+saleamount*batch_sgst/100
+					items.append([drug,manufacture,str(batch['batch']),salecount,batch['expiry'],saleamount])  
+									
 				if count > 0:
 					raise cdb.mdb.Error(420, "not enough stock of " +drug )
 			
