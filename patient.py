@@ -72,6 +72,7 @@ def removePatient(id,name,ip):
 		dischargetotal=0
 	dischargetotal+=billtotal
 	sh['discharge']=dischargetotal
+	sh.close()
 	
 class AddPatient(Frame):
 	def __init__(self,parent,patientlist=None,ip="",name=""):

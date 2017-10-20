@@ -61,6 +61,7 @@ class Pharma(Tk):
 			noprinter=sh['noprinter']
 		except:
 			noprinter=False
+		sh.close()
 		self.debug.set(noprinter)
 		
 		repmenu=Menu(menu,tearoff=0)
@@ -84,7 +85,6 @@ class Pharma(Tk):
 		adminmenu.add_checkbutton(label="Debug",command=self.noprinter,variable=self.debug)
 		adminmenu.add_command(label="Set Printers",command=self.setprinters)
 		adminmenu.add_command(label="Set Db params",command=self.dbparams)
-		adminmenu.add_command(label="Set GST rates",command=self.setgst)
 		menu.add_cascade(label="Admin",menu=adminmenu)
 
 		self.config(menu=menu)
@@ -244,6 +244,7 @@ class Pharma(Tk):
 			return
 		sh=shelve.open("data.db")
 		sh['noprinter']=self.debug.get()
+		sh.close()
 				
 	def setprinters(self):
 		printbill.Checkprinters()
@@ -252,10 +253,6 @@ class Pharma(Tk):
 		if password.askpass("admin"):
 			win=cdb.DbVariables()
 			
-	def setgst(self):
-		if password.askpass("admin"):
-			SetTax(Toplevel())
-	
 	def checkdb(self):
 		try:
 			db=cdb.Db()
@@ -286,36 +283,5 @@ class Pharma(Tk):
 		self.stock=stock
 		self.event_generate("<<stock_changed>>")
 		
-class SetTax (Frame):
-
-	def __init__(self,parent=None):
-		if not parent:
-			parent=Tk()
-		Frame.__init__(self,parent)
-		sh=shelve.open('data.db')
-		try:
-			cgst=sh['cgst']
-			sgst=sh['sgst']
-		except:
-			cgst=0
-			sgst=0
-		self.pack()
-		self.varCgst=StringVar()
-		self.varCgst.set(cgst)
-		self.varSgst=StringVar()
-		self.varSgst.set(sgst)
-		Label(self,text="CGST").grid(row=0,column=0)
-		Entry(self,textvariable=self.varCgst).grid(row=0,column=1)
-		Label(self,text="SGST").grid(row=1,column=0)
-		Entry(self,textvariable=self.varSgst).grid(row=1,column=1)
-		Button(self,text="Save",command=self.save).grid(row=2,column=1)
-		
-	def save(self):
-		sh=shelve.open('data.db')
-		sh['cgst']=self.varCgst.get()
-		sh['sgst']=self.varSgst.get()
-		self.master.destroy()
-		
-
 if __name__=="__main__":
 	Pharma()

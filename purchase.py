@@ -234,10 +234,11 @@ class addStock(Frame):
 			printbill.printinfo(printout)
 			sh=shelve.open("data.db")
 			try:
-				curpurchase=sh['purchase']
+				curpurchase=float(sh['purchase'])
 			except:
 				curpurchase=0
 			sh['purchase']=curpurchase+float(total)
+			sh.close()
 			self.items=[]
 			self.refreshcanvas()
 			self.master.restock()

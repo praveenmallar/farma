@@ -9,7 +9,12 @@ class Db:
  """connects by default to mysql."""
 
  def __init__(self):
-	self.sh = shelve.open('data.db')
+	sh = shelve.open('data.db')
+	self.host=sh['host']
+	self.user=sh['db_user']
+	self.passw=sh['db_pass']
+	self.db=sh['db']
+	sh.close()
 	
  def write_db_variables(self):
 	"use, to change the default mysql connection settings"
@@ -18,10 +23,11 @@ class Db:
 	sh['db_user']='mukunda'
 	sh['db_pass']='gopidr'
 	sh['db']='mukunda'
- 
+ 	sh.close()
+ 	
  def connection(self):
  	"""returns connection."""
-	db=mdb.connect(self.sh['host'],self.sh['db_user'],self.sh['db_pass'],self.sh['db'])
+	db=mdb.connect(self.host,self.user,self.passw,self.db)
 	return db
 
 class DbVariables(Frame):
@@ -38,6 +44,7 @@ class DbVariables(Frame):
 				vars[k]=sh[k]
 			except:
 				pass
+		sh.close()
 		i=1
 		for k in vars.keys():
 			Label(self,text=k).grid(row=i,column=0)
@@ -54,7 +61,8 @@ class DbVariables(Frame):
 		for k in self.hash:
 			sh[k]=self.hash[k].get()
 		self.parent.destroy()
-
+		sh.close()
+		
 def checkdb():
 	try:
 		db=Db()

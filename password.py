@@ -43,7 +43,9 @@ class Password(Frame):
 			tkMessageBox.showerror("wrong password", "old password doesn't match",parent=self.master)
 			return
 		sh[role]=newp
+		sh.close()
 		tkMessageBox.showinfo("success","password saved",parent=self.master)
+		
 def askpass(admin=0):
 	'''	func checkpass(admin="admin|user"):
 			asks user password and returns True or False
@@ -59,6 +61,7 @@ def checkpass(passwd,role="user"):
 		roler="pass"
 	sh=shelve.open("data.db")
 	passw=sh[roler]
+	sh.close()
 	if passwd==passw:
 		return True
 	else:

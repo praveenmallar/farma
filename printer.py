@@ -24,6 +24,7 @@ class printer:
 			self.noprinter=sh['noprinter']
 		except:
 			self.noprinter=False
+		sh.close()
 
 	def default(self):
 		self.output+=self.esc+"@"
@@ -170,6 +171,7 @@ class Checkprinters:
 				shprinter[k]=sh[k]
 			except:
 				shprinter[k]=None
+		sh.close()
 		self.top=tk.Toplevel(parent=None)
 		f=tk.Frame(self.top)
 		f.pack()
@@ -200,6 +202,7 @@ class Checkprinters:
 			sh[fin.key]=fin.printvar.get()
 		tmb.showinfo("Done","Printers saved",parent=self.top)
 		self.top.destroy()
+		sh.close()
 
 	def demoprint (self,printer):
 		dev=os.open(printer,os.O_RDWR)
