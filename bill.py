@@ -292,12 +292,12 @@ class Bill(Frame):
 
 def print_day_bills(day):
 	cur=cdb.Db().connection().cursor(cdb.dictcursor)
-	cur.execute("select bill.id as id,bill.name as name,doc.name as doc,date,net from bill join doc on doc.id=bill.doc where date=%s",(day.isoformat()))
+	cur.execute("select bill.id as id,bill.name as name,doc.name as doc,date,net from bill join doc on doc.id=bill.doc where date=%s",[day.isoformat()])
 	rows=cur.fetchall()
 	for bill in rows:
 		id=bill['id']
 		cur.execute("select drug.name as drug,sale.count,stock.batch,stock.price,stock.discount,stock.tax,stock.expiry from sale join stock on sale.stock=stock.id"\
-				" join drug on stock.drug_id=drug.id where sale.bill=%s",(id))
+				" join drug on stock.drug_id=drug.id where sale.bill=%s",[id])
 		r=cur.fetchall()
 		items=[]
 		for sale in r:

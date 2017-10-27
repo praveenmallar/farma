@@ -4,6 +4,7 @@ import comp
 import tkMessageBox
 import printer as printbill
 import shelve
+import datetime as dt
 
 class Cancel(Frame):
 		
@@ -88,9 +89,11 @@ class Cancel(Frame):
 		con=cdb.Db().connection()
 		cur=con.cursor()
 		returnamount=0
+		dat=dt.date.today()
+		dat="      {:%d %b %y, %a}".format(dat)
 		printout=[]
 		printout.extend(printbill.header)
-		printout.extend(("","    BILL RETURN ", "Bill number: "+str(self.curbill),""))
+		printout.extend(("","    BILL RETURN ", "Bill number: "+str(self.curbill),dat,""))
 		ip=False
 		if self.isip(self.curbill,cur):	
 			ip=True
@@ -175,7 +178,9 @@ class Cancel(Frame):
 			if not ip:
 				printout=[]
 				printout.extend(printbill.header)
-				printout.extend(("","    BILL CANCEL"))
+				dat=dt.date.today()
+				dat="      {:%d %b %y, %a}".format(dat)
+				printout.extend(("","    BILL CANCEL",dat))
 				printout.extend(("Bill no:" + str(self.curbill),"","Refund amount  "+str(returnamount)))
 				printbill.printinfo(printout)
 				sh=shelve.open("data.db")

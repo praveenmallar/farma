@@ -67,7 +67,8 @@ class Pharma(Tk):
 		repmenu=Menu(menu,tearoff=0)
 		repmenu.add_command(label="Day Report",command=self.dayreport)
 		repmenu.add_command(label="Last Month Report",command=self.monthreport)
-		repmenu.add_command(label="Print day bills (yesterday)",command=self.print_day_bills)
+		repmenu.add_command(label="Print day bills Detailed (yesterday)",command=self.print_day_bills)
+		repmenu.add_command(label="Print day bills (yesterday)",command=self.print_day_bills_summery)
 		menu.add_cascade(label="Report",menu=repmenu)
 
 		viewmenu=Menu(menu,tearoff=0)
@@ -129,10 +130,6 @@ class Pharma(Tk):
 			lastprint=sh['lastprint']
 		except:
 			lastprint=0
-		try:
-			myar=sh['bills']
-		except:
-			myar=sh['bills']={"sale":[],"ipsale":[]}
 		lines.append("report from bill#"+str(lastprint+1)+ " to #"+str(lastbill))
 		lines.append("")
 		lines.append('sale     :'+"{0:.2f}".format(sh['sale']))
@@ -143,8 +140,6 @@ class Pharma(Tk):
 		lines.append('purchase :'+"{0:.2f}".format(sh['purchase']))
 		lines.append("")
 		csvstring="{},{},{},{},{},{},{},{},{}\n".format (str(dt.date.today()),lastprint+1,lastbill,sh['sale'],sh['ipsale'],sh['selfsale'],sh['return'],sh['discharge'],sh['purchase'])
-		for l in myar['sale'] :
-			lines.append(" {:7d} - {:8.2f}".format(l[0],l[1]))
 		printbill.printinfo(lines)
 		sh['sale']=0
 		sh['purchase']=0
@@ -155,6 +150,7 @@ class Pharma(Tk):
 		sh['lastprint']=lastbill
 		self.statusSale.set(sh['sale'])
 		self.statusIp.set(sh['ipsale'])
+		sh['bills-yesterday']=sh['bills']
 		myar={"sale":[],"ipsale":[]}
 		sh['bills']=myar
 		sh.close()
@@ -262,10 +258,20 @@ class Pharma(Tk):
 			a.wait_window()
 	
 	def print_day_bills(self):
-		if not password.askpass():
+		if not password.askpass("admin"):
 			return
 		d=dt.date.today()-dt.timedelta(days=1)
 		print_daybills(d)
+
+	def print_day_bills_summery (self):
+		if not password.askpass("admin"):
+			return
+		sh=shelve.open("data.db")
+		lines=[]
+		myar=sh['bills-yesterday']
+		for l in myar['sale'] :
+			lines.append(" {:7d} - {:8.2f}".format(l[0],l[1]))
+		printbill.printinfo(lines)
 		
 	def restock(self):
 		db=cdb.Db().connection()
