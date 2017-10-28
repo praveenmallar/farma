@@ -6,6 +6,7 @@ import printer as printbill
 import shelve
 import datetime as dt
 import tkMessageBox
+import connectdb as cdb
 from bill import print_day_bills as print_daybills
 
 
