@@ -272,6 +272,7 @@ class Pharma(Tk):
 		for l in myar['sale'] :
 			lines.append(" {:7d} - {:8.2f}".format(l[0],l[1]))
 		printbill.printinfo(lines)
+		sh.close()
 		
 	def restock(self):
 		db=cdb.Db().connection()
