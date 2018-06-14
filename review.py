@@ -197,7 +197,7 @@ class Review (Frame):
 		d1=d1.get()
 		d2=d2.get()
 		gst=gst.get()
-		sql="select bill.date, sum(stock.price*sale.count) as net, sum(stock.price*stock.cgstp/100*sale.count) as cgst, sum(stock.price*stock.sgstp/100*sale.count) as sgst from bill join sale on sale.bill=bill.id join stock on stock.id=sale.stock where bill.date>=str_to_date(\"{}\",\"%d-%b-%y\") and bill.date<=(\"{}\",\"%d-%b-%y\") and stock.cgstp={} group by bill.date;".format(d1,d2,gst[1])
+		sql="select bill.date, sum(stock.price*sale.count) as net, sum(stock.price*stock.cgstp/100*sale.count) as cgst, sum(stock.price*stock.sgstp/100*sale.count) as sgst from bill join sale on sale.bill=bill.id join stock on stock.id=sale.stock where bill.date>=str_to_date(\"{}\",\"%d-%b-%y\") and bill.date<=str_to_date(\"{}\",\"%d-%b-%y\") and stock.cgstp={} group by bill.date;".format(d1,d2,gst[1])
 		format="  {:%d-%b-%y} : {:9.2f}  : {:9.2f}  :{:9.2f} "
 		titlefields=("date","net","cgst","sgst")
 		title="  {:9.9s} : {:9.9s}  : {:9.9s}  :{:9.9s} ".format(*titlefields)
