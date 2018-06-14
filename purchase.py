@@ -219,7 +219,7 @@ class addStock(Frame):
 				r=cur.fetchone()
 				lastmonth_sale=r[0]
 				if gstbill==1:
-					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgstp,sgstp, purchase_id,buy_price, discount,terminate) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"
+					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgstp,sgstp, purchase_id,buy_price, discount,terminate,tax) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0,0)"
 					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,f.cgst,f.sgst,billid,rate,disc))
 				else:
 					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, discount,terminate) values  (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"

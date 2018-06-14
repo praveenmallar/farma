@@ -44,6 +44,8 @@ class Review (Frame):
 		Button(self.f1,text="Stock",command=lambda:self.showOptions("stock")).pack(side=LEFT)
 		Button(self.f1,text="Purchase",command=lambda:self.showOptions("purchase")).pack(side=LEFT)
 		Button(self.f1,text="Bills",command=lambda:self.showOptions("bills")).pack(side=LEFT)
+		Button(self.f1,text="GST",command=lambda:self.showOptions("gst")).pack(side=LEFT)
+		
 
 		if self.status=="admin":
 			Button(self.f1,text="Print",command=self.printlines).pack(side=RIGHT)
@@ -148,6 +150,30 @@ class Review (Frame):
 			optdate=BooleanVar()
 			Checkbutton(fr,text="aggregate by date",variable=optdate).pack(pady=20)
 			Button(fr,text="Load",command=lambda d1=d1,d2=d2,op1=optdate:self.showbills(d1,d2,op1)).pack(pady=5)
+			
+		elif selection=="gst":
+			f.fr=fr=Frame(f,bd=1)
+			fr.pack(side=TOP,padx=5,pady=5)			
+			ft=Frame(fr,bd=1,relief=RIDGE)
+			ft.pack(pady=5,fill=X)
+			date=BooleanVar()
+			d=dt.date.today()
+			dd=dt.date(day=1,month=d.month,year=d.year)
+			Label(ft,text="from").pack(side=LEFT)
+			cb1=cp.Calbutton(ft,inidate=dd)
+			cb1.pack(side=LEFT)
+			Label(ft,text="to").pack(side=LEFT)
+			cb2=cp.Calbutton(ft)
+			cb2.pack(side=LEFT)
+
+			ft=Frame(fr)
+			Label(ft,text="GST percentage:").pack()
+			ft.pack(pady=5,fill=X)
+			gst=comp.myComp2(ft,listitems=[],listheight=3)
+			gst.pack()
+			self.load_gstpercentage(gst)
+
+			Button(fr,text="Load",command=lambda d1=cb1,d2=cb2,gst=gst: self.showgst(d1,d2,gst)).pack(padx=20)
 
 	def showbills(self,d1,d2,op1):
 		d1=d1.get()
@@ -166,6 +192,16 @@ class Review (Frame):
 			title=" {:9.9s}  {:7.7s}  {:7.7s}  {:10.10s} {:10.10s}".format(*titlefields)
 			
 		self.fillCanvas(sql,format,titlefields,title) 
+		
+	def showgst(self,d1,d2,gst):
+		d1=d1.get()
+		d2=d2.get()
+		gst=gst.get()
+		sql="select bill.date, sum(stock.price*sale.count) as net, sum(stock.price*stock.cgstp/100*sale.count) as cgst, sum(stock.price*stock.sgstp/100*sale.count) as sgst from bill join sale on sale.bill=bill.id join stock on stock.id=sale.stock where bill.date>=str_to_date(\"{}\",\"%d-%b-%y\") and bill.date<=(\"{}\",\"%d-%b-%y\") and stock.cgstp={} group by bill.date;".format(d1,d2,gst[1])
+		format="  {:%d-%b-%y} : {:9.2f}  : {:9.2f}  :{:9.2f} "
+		titlefields=("date","net","cgst","sgst")
+		title="  {:9.9s} : {:9.9s}  : {:9.9s}  :{:9.9s} ".format(*titlefields)
+		self.fillCanvas(sql,format,titlefields,title)
 
 	def showpurchase(self,g,d,s,t):
 		gr=g.get()[1]
@@ -308,6 +344,16 @@ class Review (Frame):
 		for r in rows:
 			lst.append([r[1],r[0]])
 		dr.changelist(lst)
+		
+	def load_gstpercentage(self,gst):
+		cur=cdb.Db().connection().cursor()
+		cur.execute("select distinct cgstp from stock order by cgstp;")
+		lst=[]
+		rows=cur.fetchall()
+		for r in rows:
+			if r[0]:
+				lst.append([str(r[0]),float(r[0])])
+		gst.changelist(lst)
 
 	def loadgroups(self,c):
 		cur=cdb.Db().connection().cursor()
@@ -332,7 +378,7 @@ class Review (Frame):
 		countformat="{:6f}"
 		selectstring=" drug.name "
 		groupstring=" drug.id "
-		countstring=" sum(sale.count) "
+		countstring=" sum(sale.count) as sale_count "
 
 		if drug>-1:
 			wheredrug=" and drug.id={} ".format(drug)
@@ -341,7 +387,7 @@ class Review (Frame):
 		else:
 			wheredrug=""
 		if countoramount==2:
-			countstring=" sum(sale.count*(stock.price*(100-stock.discount)*(100+stock.tax)/10000)) "
+			countstring=" sum(sale.count*(stock.price*(100-stock.discount)*(100+stock.tax)/10000)) as sale_count "
 			countformat=" {:7.2f}"
 		if sortbydate==1:
 			datestring=" ,bill.date "
@@ -350,20 +396,19 @@ class Review (Frame):
 			selectstring=" bill.date "
 			groupstring=" bill.date "
 		else :
-			datestring=""
-			dateorder= " drug.name "
-		if sortbydoc==1:
-			dateorder=" doc.name "
-			groupstring=" doc.id "
-			selectstring=" doc.name "
-		else:
-			dateorder=" drug.name "
+			if sortbydoc==1:
+				dateorder=" doc.name "
+				groupstring=" doc.id "
+				selectstring=" doc.name "
+			else:
+				dateorder=" drug.name "
+
 		if doctor>-1:
 			wheredoc=" and doc.id ={} ".format(doctor)
 		else: wheredoc=""
 		formatstring+=countformat
 
-		sql= "select {}, {} from drug join stock on drug.id=stock.drug_id join sale on sale.stock=stock.id join bill on sale.bill = bill.id join doc on doc.id=bill.doc where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} {}  group by {} order by {} ;".format(selectstring,countstring,date1,'%d-%b-%y',date2,'%d-%b-%y', wheredrug,wheredoc,groupstring,dateorder)
+		sql= "select {}, {} from drug join stock on drug.id=stock.drug_id join sale on sale.stock=stock.id join bill on sale.bill = bill.id join doc on doc.id=bill.doc where bill.date> str_to_date(\"{}\",\"{}\") and bill.date< str_to_date(\"{}\",\"{}\") {} {}  group by {} having sale_count>0 order by {} ;".format(selectstring,countstring,date1,'%d-%b-%y',date2,'%d-%b-%y', wheredrug,wheredoc,groupstring,dateorder)
 
 		self.fillCanvas(sql,formatstring)		
 		
@@ -391,9 +436,11 @@ class Review (Frame):
 		con=cdb.Db().connection()
 		cur=con.cursor()
 		print sql
+		print fmt
 		try:
 			cur.execute(sql)
 			rows=cur.fetchall()
+			print rows
 		except:
 			tmb.showerror("Error","check for values",parent=self.master)
 			return
@@ -407,6 +454,7 @@ class Review (Frame):
 		if titlefields: 
 			self.csv.append(titlefields)
 		for row in rows:
+			print row
 			line=fmt.format(*row)
 			self.lines.append(line)
 			self.csv.append(row)
