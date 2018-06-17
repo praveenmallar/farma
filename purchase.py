@@ -117,8 +117,8 @@ class addStock(Frame):
 		try:
 			f.cgst=self.cgstp.get()
 			f.sgst=self.sgstp.get()
-			if f.cgst==0 or f.sgst==0:
-				raise ValueError("cgst or sgst cant be 0")
+			if not f.cgst== f.sgst:
+				raise ValueError("cgst not equal to sgst")
 		except ValueError:
 			tkMessageBox.showerror("Error","error in GST",parent=self.parent)
 			return			
