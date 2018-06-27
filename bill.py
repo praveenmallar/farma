@@ -133,7 +133,7 @@ class Bill(Frame):
 			total+=(f.drugcount.get()*f.drugprice)
 		self.f3.update_idletasks()
 		self.f3.config(scrollregion=self.f3.bbox(ALL))
-		self.cur_total.set(total)
+		self.cur_total.set("{:.2f}".format(float(total)))
 
 	def removeframe(self,frame):
 		self.items.remove(frame)

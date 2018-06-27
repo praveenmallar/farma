@@ -277,7 +277,7 @@ class Pharma(Tk):
 	def restock(self):
 		db=cdb.Db().connection()
 		cursor=db.cursor()
-		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price) as price ,saletable.last_month_sale "\
+		sql="select drug.name as drug, sum(stock.cur_count) as count, min(stock.expiry) as expiry, max(stock.price*(1+cgstp/100+sgstp/100)) as price ,saletable.last_month_sale "\
 			"from drug join stock on drug.id=stock.drug_id left join "\
 			"(select sum(sale.count) as last_month_sale, stock.drug_id as drugid from sale join stock on sale.stock=stock.id join bill "\
 			"on sale.bill=bill.id where bill.date>curdate() - interval 30 day group by drugid)saletable on drug.id=saletable.drugid "\
