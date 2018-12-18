@@ -60,7 +60,7 @@ class CreditNote(Frame):
 		self.canvas.delete(ALL)
 		i=0
 		for row in rows:
-			line="{:<10d} {:%d/%b,%y} {:10.2f}".format(row[1],row[3],row[4])
+			line="{:<10s} {:%d/%b,%y} {:10.2f}".format(row[1],row[3],row[4])
 			self.canvas.create_text(2,10+i*20,text=line,anchor=NW)
 			i+=1
 		self.canvas.config(scrollregion=self.canvas.bbox(ALL))
