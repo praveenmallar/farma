@@ -200,7 +200,7 @@ class Pharma(Tk):
 		stockists=cur.fetchall()
 		items =["   PURCHASE PAYMENT"," "]
 		for stockist in stockists:
-			sql="select count(amount), sum(amount) ,group_concat(amount) from purchase where date < date_format(now(),'%Y-%m-01') and paid!=1 and stockist="+str(stockist[0])+";"
+			sql="select count(amount), sum(amount) ,group_concat(round(amount)) from purchase where date < date_format(now(),'%Y-%m-01') and paid!=1 and stockist="+str(stockist[0])+";"
 			cur.execute(sql)
 			if cur.rowcount>0:
 				res=cur.fetchone()			
