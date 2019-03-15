@@ -192,7 +192,7 @@ class addStock(Frame):
 			billid=cur.lastrowid
 			billtotal=0
 			printout=["","","PURCHASE","",stockist,"bill: "+billno,""]
-			printout.append("{0:12s}{1:4s}{2:8s}{3:8s}{4:4s}{5:6s}{6:4s}{7:5}".format("drug","ct","rate","mrp","gst","exp","stk","sl"))
+			printout.append("{0:10s}{1:4s}{2:8s}{3:8s}{4:4s}{5:6s}{6:4s}{7:5}".format("drug","ct","rate","mrp","gst","exp","sl"))
 			for f in self.items:
 				drug=f.drug
 				batch=f.batch
@@ -227,7 +227,7 @@ class addStock(Frame):
 				billtotal=billtotal+count*rate
 				if gstbill==1:
 					mrp=f.mrp
-				printout.append("{0:12.12s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:4.4s}-{5:%b%y}-{6:3d}-{7:4d}".format(drug,int(count),float(rate),float(mrp),str(int(f.cgst))+str(int(f.sgst)), dt.datetime.strptime(expiry,"%d-%b-%y").date(),int(existing_stock or 0),int(lastmonth_sale or 0)))
+				printout.append("{0:10.10s}-{1:4d}-{2:6.2f}-{3:6.2f}-{4:2.2s}-{5:%y%m}-{6:2.1f}".format(drug,int(count),float(rate),float(mrp),str(int(f.cgst)), dt.datetime.strptime(expiry,"%d-%b-%y").date(),float(lastmonth_sale or 0)/float(existing_stock or 1) ))
 			db.commit()
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])

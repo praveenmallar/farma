@@ -140,10 +140,13 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 	
 def printinfo(lines):
 
+	c_per_line=44
 	p=printer()
 	p.blank(1)	
 	for line in lines:
-		p.text(line)
+		while (len(line)>0):
+			p.text(line[:c_per_line])
+			line=line[c_per_line:]
 	p.blank(2)
 	blines=10-len(lines)
 	if blines>0:	
