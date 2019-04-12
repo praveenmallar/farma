@@ -192,7 +192,7 @@ class addStock(Frame):
 			billid=cur.lastrowid
 			billtotal=0
 			printout=["","","PURCHASE","",stockist,"bill: "+billno,""]
-			printout.append("{0:10s}{1:4s}{2:8s}{3:8s}{4:4s}{5:6s}{6:4s}{7:5}".format("drug","ct","rate","mrp","gst","exp","sl"))
+			printout.append("{0:10s}{1:4s}{2:8s}{3:8s}{4:4s}{5:6s}{6:3s}".format("drug","ct","rate","mrp","gst","exp","sl"))
 			for f in self.items:
 				drug=f.drug
 				batch=f.batch
@@ -211,18 +211,22 @@ class addStock(Frame):
 				row=cur.fetchone()
 				drugid=row[0]
 				sql="select sum(stock.cur_count) from stock where stock.drug_id=%s and stock.expiry> curdate();"
+				print "1"
 				cur.execute(sql,[drugid])
 				r=cur.fetchone()
 				existing_stock=r[0]
 				sql="select sum(sale.count) from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where bill.date> date_add(curdate(), interval -1 month) and stock.drug_id=%s;"
+				print "2"
 				cur.execute(sql,[drugid])
 				r=cur.fetchone()
 				lastmonth_sale=r[0]
 				if gstbill==1:
 					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgstp,sgstp, purchase_id,buy_price, discount,terminate,tax) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0,0)"
+					print "3"
 					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,f.cgst,f.sgst,billid,rate,disc))
 				else:
 					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, discount,terminate) values  (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"
+					print "4"
 					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,disc))
 				billtotal=billtotal+count*rate
 				if gstbill==1:
