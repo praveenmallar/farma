@@ -3,6 +3,7 @@ header = ("Mukunda Pharmacy","Payyanur ph: 04985 205119,202939")
 import shelve
 import tkMessageBox as tmb
 import Tkinter as tk
+import subprocess as sp
 
 class printer:
 	
@@ -70,6 +71,7 @@ class printer:
 
 	def toprinter(self,printer=0):
 		prntr=self.printer[printer]
+		print prntr
 		if not self.noprinter:
 			dev=os.open(prntr,os.O_RDWR)
 			os.write(dev,self.output)
@@ -147,6 +149,7 @@ def printinfo(lines):
 		while (len(line)>0):
 			p.text(line[:c_per_line])
 			line=line[c_per_line:]
+			print line
 	p.blank(2)
 	blines=10-len(lines)
 	if blines>0:	
@@ -161,6 +164,7 @@ class Checkprinters:
 		self.sysprinters=None
 		try:
 			self.sysprinters=sp.check_output("ls /dev/usb/lp*",shell=True).split("\n")
+			print self.sysprinters
 		except:
 			pass	 
 		if not self.sysprinters:

@@ -12,7 +12,7 @@ class myComp(Frame):
 		vcmd=self.register(self.validatetext)
 		self.text=StringVar()
 		sb=Scrollbar(self,orient=VERTICAL,takefocus=0)
-		self.list=Listbox(self,height=listheight,yscrollcommand=sb.set,exportselection=0,selectbackground="#998866",selectforeground="#cceeff")
+		self.list=Listbox(self,height=listheight,yscrollcommand=sb.set,exportselection=0)
 		self.entr = Entry(self,validate="key",validatecommand=(vcmd,'%P'),textvariable=self.text)
 		self.entr.pack(side=TOP, fill=X, expand=TRUE)
 		sb.pack(side=RIGHT,fill=Y)
