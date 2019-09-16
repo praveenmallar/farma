@@ -238,16 +238,17 @@ class Bill(Frame):
 					if selfbill==0:
 						cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch['id'],billid,salecount))
 					saleamount=salecount*sell_rate(batch['price'],batch['discount'])
-					billtotal=billtotal+saleamount
 					cgst=cgst+saleamount*batch_cgst/100
 					sgst=sgst+saleamount*batch_sgst/100
+					saleamount=saleamount*(1+batch_cgst/100+batch_sgst/100) # gst not separate
+					billtotal=billtotal+saleamount
 					items.append([drug,manufacture,str(batch['batch']),salecount,batch['expiry'],saleamount])  
 									
 				if count > 0:
 					raise cdb.mdb.Error(420, "not enough stock of " +drug )
 			
 			if selfbill==0:
-				cur.execute("update bill set cgst=%s,sgst=%s,net=%s where id=%s;",(cgst,sgst,billtotal+cgst+sgst,billid))
+				cur.execute("update bill set cgst=%s,sgst=%s,net=%s where id=%s;",(cgst,sgst,billtotal,billid))
 			if ip:		
 				cur.execute("insert into credit(patientid,billid) values(%s,%s);",(patientid,billid))
 			db.commit()
