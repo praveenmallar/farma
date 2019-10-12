@@ -181,12 +181,12 @@ class Review (Frame):
 		optdate=op1.get()
 		cur=cdb.Db().connection().cursor()
 		if not optdate:
-			sql="select bill.id, bill.name, bill.net, bill.date, doc.name from bill join doc on bill.doc=doc.id where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") order by bill.id;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
+			sql="select bill.id, bill.name, bill.net + bill.cgst +bill.sgst, bill.date, doc.name from bill join doc on bill.doc=doc.id where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") order by bill.id;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
 			format=" {:6.0f}  {:15.15s}  {:7.2f}  {:%d-%b-%y}  {:15.15s}"
 			titlefields=("Bill","Patient","amount","date","doctor")
 			title=" {:6.6s}  {:15.15s}  {:7.7s}  {:9.9s}  {:15.15s}".format(*titlefields)
 		else:
-			sql="select bill.date, min(bill.id),max(bill.id),sum(bill.net),sum(bill.cgst+bill.sgst) from bill where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") group by bill.date order by bill.date;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
+			sql="select bill.date, min(bill.id),max(bill.id),sum(bill.net+bill.cgst+bill.sgst) from bill where bill.date >= str_to_date(\"{}\",\"{}\") and bill.date <= str_to_date(\"{}\",\"{}\") group by bill.date order by bill.date;".format(d1,"%d-%b-%y",d2,"%d-%b-%y")
 			format=" {:%d-%b-%y}  {:7.0f}  {:7.0f}  {:10.2f} {:9.2f}"
 			titlefields=("date","from","to","net","gst")
 			title=" {:9.9s}  {:7.7s}  {:7.7s}  {:10.10s} {:10.10s}".format(*titlefields)

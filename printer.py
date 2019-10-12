@@ -100,6 +100,12 @@ def printbill(billno,patient,doc,date,total,cgst,sgst,items,discount=0,ip=None,s
 		p.text("DL No:20/110674,21/110675")
 		p.text("GST No:32AAMFM2726K1Z7")
 	p.blank()
+	p.align_center()
+	p.text("-"*43)
+	p.text("Composition taxable person")
+	p.text("not eligible to collect tax on supplies")
+	p.text("-"*43)
+	p.align_left()
 	p.text("Patient: {:15.15s}   Date:{:%d-%m-%y}".format(patient,date))
 	if not doc: 
 		doc=""
