@@ -1,6 +1,6 @@
-import Tkinter as tk
+import tkinter as tk
 import connectdb as cdb
-from tkMessageBox import askokcancel,showinfo
+from tkinter.messagebox import askokcancel,showinfo
 from comp import myComp2
 
 class addNew(tk.Frame):
@@ -67,8 +67,8 @@ class addNew(tk.Frame):
 		if not askokcancel("Confirm","Change "+oldtx + " to " + newtx + "?",parent=self.master):
 			return
 		cursor=self.db.cursor()
-		sql="update "+self.table+" set "+self.field+"=%s where "+self.field+"=%s;"
-		if cursor.execute(sql,[newtx,oldtx]):
+		sql="update "+self.table+" set "+self.field+"={} where "+self.field+"={};".format(newtx,oldtx)
+		if cursor.execute(sql):
 			self.ed.set("")
 			self.refreshlist()
 		self.db.commit()
@@ -121,7 +121,7 @@ class addDrug(addNew):
 		sel=self.lb.curselection()
 		if len(sel)>0:
 			dr=self.lb.get(sel[0])
-		cur.execute("select name from manufacture where id in (select manufacture from drug where name=%s);",[dr])
+		cur.execute("select name from manufacture where id in (select manufacture from drug where name=%s);".format(dr))
 		if cur.rowcount==1:
 			r=cur.fetchone()
 			r=r[0]
@@ -138,7 +138,7 @@ class addDrug(addNew):
 		else:
 			mfcr=0
 		cur=self.db.cursor()
-		cur.execute("update drug set manufacture=%s where name=%s",(mfcr,drg))
+		cur.execute("update drug set manufacture={} where name={}".format(mfcr,drg))
 		self.db.commit()
 		
 		

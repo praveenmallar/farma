@@ -1,6 +1,6 @@
-from  Tkinter import *
+from  tkinter import *
 import shelve
-import tkMessageBox
+import tkinter.messagebox as tkMessageBox
 
 class Password(Frame):
 	'''	changes passwords'''
@@ -25,7 +25,7 @@ class Password(Frame):
 		Button(self,text="Change password",command=self.changepass).pack(pady=10)
 
 	def changepass(self):
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		if self.newp1.get()!=self.newp2.get():
 			tkMessageBox.showerror("password error", "passwords don't match",parent=self.master)
 			return
@@ -43,14 +43,13 @@ class Password(Frame):
 			tkMessageBox.showerror("wrong password", "old password doesn't match",parent=self.master)
 			return
 		sh[role]=newp
-		sh.close()
 		tkMessageBox.showinfo("success","password saved",parent=self.master)
-		
-def askpass(admin=0):
+def askpass(admin=0,root=None):
 	'''	func checkpass(admin="admin|user"):
 			asks user password and returns True or False
 	'''
-	c=Checkpass(admin)
+	print(root)
+	c=Checkpass(admin,root)
 	c.top.wait_window()
 	return c.value	
 
@@ -59,18 +58,18 @@ def checkpass(passwd,role="user"):
 		roler="admin_pass"
 	else:
 		roler="pass"
-	sh=shelve.open("data.db")
+	sh=shelve.open("data")
 	passw=sh[roler]
-	sh.close()
 	if passwd==passw:
 		return True
 	else:
 		return False
 
 class Checkpass:
-	def __init__(self,admin=0):
+	def __init__(self,admin=0,root=None):
 		self.value=False
-		self.top=top=Toplevel()
+		print(root)
+		self.top=top=Toplevel(root)
 		self.admin=admin
 		f=Frame(top)
 		f.pack()

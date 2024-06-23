@@ -1,8 +1,8 @@
 import os
-header = ("Mukunda Pharmacy","Payyanur ph: 04985 205119,202939")
+header = ("Mukunda Hospital Pharmacy","Payyanur ph: 04985 205119,202939")
 import shelve
-import tkMessageBox as tmb
-import Tkinter as tk
+from tkinter import messagebox as tmb
+import tkinter as tk
 import subprocess as sp
 
 class printer:
@@ -14,7 +14,7 @@ class printer:
 		self.default()
 		self.printers={"bill_printer":0}
 	
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		self.printer=[None]*len(self.printers)
 		for k in self.printers.keys():
 			try:
@@ -25,7 +25,6 @@ class printer:
 			self.noprinter=sh['noprinter']
 		except:
 			self.noprinter=False
-		sh.close()
 
 	def default(self):
 		self.output+=self.esc+"@"
@@ -67,18 +66,17 @@ class printer:
 		self.output+=text+"\n"
 	
 	def printout(self):
-		print self.output
+		print (self.output)
 
 	def toprinter(self,printer=0):
 		prntr=self.printer[printer]
-		print prntr
 		if not self.noprinter:
 			dev=os.open(prntr,os.O_RDWR)
-			os.write(dev,self.output)
-			os.write(dev,"\0")
+			os.write(dev,self.output.encode("utf-8"))
+			os.write(dev,"\0".encode("utf-8"))
 			os.close(dev)
 		else:
-			print self.output
+			print (self.output)
 		f=open("bills.txt","a")
 		output=(self.output).replace("\n","@@")+"\n"
 		f.write	(output)
@@ -150,15 +148,15 @@ def printinfo(lines):
 
 	c_per_line=44
 	p=printer()
-	p.blank(1)	
+	p.align_left()
+	p.blank(1)
 	for line in lines:
 		while (len(line)>0):
 			p.text(line[:c_per_line])
 			line=line[c_per_line:]
-			print line
 	p.blank(2)
 	blines=10-len(lines)
-	if blines>0:	
+	if blines>0:
 		p.blank(blines)
 	p.cut()
 	p.toprinter()
@@ -169,22 +167,20 @@ class Checkprinters:
 
 		self.sysprinters=None
 		try:
-			self.sysprinters=sp.check_output("ls /dev/usb/lp*",shell=True).split("\n")
-			print self.sysprinters
+			self.sysprinters=[sp.check_output("ls /dev/usb/lp*",shell=True).decode("utf-8").rstrip(),]
 		except:
 			pass	 
 		if not self.sysprinters:
 			tmb.showerror("Error","No printer detected")
 			return
 		printers=printer().printers
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		shprinter={}
 		for k in printers.keys():
 			try:
 				shprinter[k]=sh[k]
 			except:
 				shprinter[k]=None
-		sh.close()
 		self.top=tk.Toplevel(parent=None)
 		f=tk.Frame(self.top)
 		f.pack()
@@ -210,12 +206,11 @@ class Checkprinters:
 		self.top.grab_set()
 
 	def selectprinters(self):
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		for fin in self.fins:
 			sh[fin.key]=fin.printvar.get()
 		tmb.showinfo("Done","Printers saved",parent=self.top)
 		self.top.destroy()
-		sh.close()
 
 	def demoprint (self,printer):
 		dev=os.open(printer,os.O_RDWR)

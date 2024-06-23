@@ -1,10 +1,10 @@
-from Tkinter import *
+from tkinter import *
 import connectdb as cdb
 import comp
 import calpicker
 import printer as printbill 
 import datetime as dt
-import tkMessageBox
+from tkinter import messagebox as tkMessageBox
 import patient 
 import shelve
 
@@ -52,7 +52,7 @@ class Bill(Frame):
 			self.master.title("Make Bill")	
 		except:
 			pass	
-		self.config(padx=20,pady=10,bd=2,relief=RIDGE,bg="#ffffee")	
+		self.config(padx=20,pady=10,bd=2,relief=RIDGE,bg="#cccccc")
 		self.items=[]
 		self.patients=patient.getPatients()
 		temp=[[" ",None]]
@@ -190,10 +190,9 @@ class Bill(Frame):
 				cur.execute(sql)
 				row=cur.fetchone()
 				docid=row[0]
-			
 			if selfbill==0:
-				sql="insert into bill(name, doc, date) values(%s,%s,%s);"
-				cur.execute(sql,(patient,docid,date.isoformat()) )
+				sql="insert into bill(name, doc, date) values('{}',{},'{}')".format(patient,docid,date.isoformat());
+				cur.execute(sql )
 				billid=cur.lastrowid
 			billtotal=0.0
 			discount=0
@@ -205,14 +204,14 @@ class Bill(Frame):
 				drug=frame.drug.get()
 				count=frame.drugcount.get()
 				i=0
-				cur.execute("select drug.id,manufacture.name from drug left join manufacture on drug.manufacture=manufacture.id where drug.name =%s",[drug])
+				cur.execute("select drug.id,manufacture.name from drug left join manufacture on drug.manufacture=manufacture.id where drug.name ='{}'".format(drug))
 				row=cur.fetchone()
 				drugid=row[0]
 				manufacture=row[1]
 				if not manufacture:
 					manufacture=""
 				dictcur=db.cursor(cdb.dictcursor)
-				dictcur.execute("select id, cur_count,price,cgstp,sgstp,discount,batch,expiry from stock where expiry > curdate() and drug_id=%s and cur_count>0 order by expiry",[drugid])
+				dictcur.execute("select id, cur_count,price,cgstp,sgstp,discount,batch,expiry from stock where expiry > curdate() and drug_id={} and cur_count>0 order by expiry".format(drugid))
 				batches=dictcur.fetchall()
 				for batch in batches:
 					if batch['cgstp']:
@@ -234,9 +233,11 @@ class Bill(Frame):
 						count=0
 					else:
 						break
-					cur.execute("update stock set cur_count=%s where id=%s;",(batchcount,batch['id']))
+					cur.execute("update stock set cur_count={} where id={};".format(batchcount,batch['id']))
 					if selfbill==0:
-						cur.execute("insert into sale(stock,bill,count) values(%s,%s,%s);",(batch['id'],billid,salecount))
+						sql="insert into sale(stock,bill,count) values({},{},{});".format(batch['id'],billid,salecount)
+						print(sql)
+						cur.execute(sql)
 					saleamount=salecount*sell_rate(batch['price'],batch['discount'])
 					#cgst=cgst+saleamount*batch_cgst/100
 					#sgst=sgst+saleamount*batch_sgst/100
@@ -248,12 +249,12 @@ class Bill(Frame):
 					raise cdb.mdb.Error(420, "not enough stock of " +drug )
 			
 			if selfbill==0:
-				cur.execute("update bill set cgst=%s,sgst=%s,net=%s where id=%s;",(cgst,sgst,billtotal,billid))
+				cur.execute("update bill set cgst={},sgst={},net={} where id={};".format(cgst,sgst,billtotal,billid))
 			if ip:		
-				cur.execute("insert into credit(patientid,billid) values(%s,%s);",(patientid,billid))
+				cur.execute("insert into credit(patientid,billid) values({},{});".format(patientid,billid))
 			db.commit()
 			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,ip=IP,selfbill=selfbill)
-			sh=shelve.open("data.db")
+			sh=shelve.open("data")
 			if selfbill==0:			
 				if ip:
 					token="ipsale"
@@ -285,7 +286,7 @@ class Bill(Frame):
 			self.selfbill.set(0)
 			self.rw.restock()
 		except cdb.mdb.Error as e:
-			tkMessageBox.showerror("Error","error %d: %s" %(e.args[0],e.args[1]),parent=self.master)
+			tkMessageBox.showerror("Error","error {}: {}" .format(e.args[0],e.args[1]), parent=self.master)
 			if db:
 				db.rollback()
 		finally :
@@ -293,12 +294,12 @@ class Bill(Frame):
 
 def print_day_bills(day):
 	cur=cdb.Db().connection().cursor(cdb.dictcursor)
-	cur.execute("select bill.id as id,bill.name as name,doc.name as doc,date,net from bill join doc on doc.id=bill.doc where date=%s",[day.isoformat()])
+	cur.execute("select bill.id as id,bill.name as name,doc.name as doc,date,net from bill join doc on doc.id=bill.doc where date={}".format(day.isoformat()))
 	rows=cur.fetchall()
 	for bill in rows:
 		id=bill['id']
 		cur.execute("select drug.name as drug,sale.count,stock.batch,stock.price,stock.discount,stock.tax,stock.expiry from sale join stock on sale.stock=stock.id"\
-				" join drug on stock.drug_id=drug.id where sale.bill=%s",[id])
+				" join drug on stock.drug_id=drug.id where sale.bill={}".format(id))
 		r=cur.fetchall()
 		items=[]
 		for sale in r:

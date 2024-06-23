@@ -1,9 +1,8 @@
-from Tkinter import *
-#from mttkinter.mtTkinter import *
+from tkinter import *
 import datetime
 from calendar import monthrange
 
-class Calpicker(Frame):
+class Calpicker():
 
 	'''Chose a date
 		Calpicker(parent,inidate)
@@ -13,27 +12,26 @@ class Calpicker(Frame):
 	months=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]
 	returndate=datetime.date.today()
 
-	def __init__(self, parent, inidate=datetime.date.today()):
-		root=self.root=Toplevel(parent)
-		Frame.__init__(self,root)
+	def __init__(self, parent=None, inidate=datetime.date.today()):
 		self.parent=parent
+		root=self.root=Toplevel(parent)
 		#root.overrideredirect(1)
 		root.transient(parent)
-		f=self
+		f=Frame(root)
 		f.pack()
 		self.date=inidate		
 		frame_top=Frame(f);frame_top.pack()
 		frame_buttons=Frame(f,relief=RAISED,borderwidth=1)
 		frame_bottom=Frame(f)
+		self.monthlabel=StringVar()
+		self.yearlabel=StringVar()
+		self.datelabel=StringVar()
 		Button(frame_top,text="<",command=lambda:self.changemonth("back")).pack(side=LEFT)
-		self.labelMonth=Label(frame_top,width=4)
-		self.labelMonth.pack(side=LEFT)
+		Label(frame_top,textvariable=self.monthlabel,width=4).pack(side=LEFT)
 		Button(frame_top,text=">",command=lambda:self.changemonth("forward")).pack(side=LEFT)
-		self.labelDate=Label(frame_top,relief=GROOVE,width=10)
-		self.labelDate.pack(side=LEFT,padx=10)
+		Label(frame_top,textvariable=self.datelabel,relief=GROOVE,width=10).pack(side=LEFT,padx=10)
 		Button(frame_top,text=">",command=lambda:self.changeyear("forward")).pack(side=RIGHT)
-		self.labelYear=Label(frame_top)
-		self.labelYear.pack(side=RIGHT)
+		Label(frame_top,textvariable=self.yearlabel).pack(side=RIGHT)
 		Button(frame_top,text="<",command=lambda:self.changeyear("back")).pack(side=RIGHT)
 
 		self.daybuttons={};self.curdaybutton=None
@@ -78,7 +76,7 @@ class Calpicker(Frame):
 		self.setdate()
 
 	def changeyear(self,direction):
-		yr=self.date.year
+		yr=int(self.yearlabel.get())
 		if direction=="back":
 			yr=yr-1
 		elif direction=="forward":
@@ -87,9 +85,9 @@ class Calpicker(Frame):
 		self.setdate()
 
 	def setdate(self):
-		self.labelDate.config(text=self.date.strftime("%d %b %Y") )
-		self.labelYear.config(text=self.date.year)
-		self.labelMonth.config(text=self.months[self.date.month-1])
+		self.datelabel.set(self.date.strftime("%d %b %Y") )
+		self.yearlabel.set(self.date.year)
+		self.monthlabel.set(self.months[self.date.month-1])
 		if self.curdaybutton !=None:
 			self.curdaybutton.config(bg=self.defaultbg)		
 		self.curdaybutton=self.daybuttons[self.date.day]
@@ -124,8 +122,7 @@ class Calpicker(Frame):
 			
 	def cancel(self,event=None):
 		self.root.destroy()
-		if self.parent: 
-			self.parent.focus_set()
+		if self.parent: self.parent.focus_set()
 
 	def resetdate(self):
 		self.date=datetime.date.today()
@@ -135,7 +132,7 @@ def getdate(window=None,inidate=datetime.date.today()):
 	'''getdate(parent)
 	'''
 	if window==None:
-		root=Toplevel()
+		root=Tk()
 	else:
 		root=window
 	c = Calpicker(root,inidate=inidate)
@@ -148,7 +145,7 @@ class Calbutton(Button):
 		Button.__init__(self,parent,kwarg)
 		self.config(text=inidate.strftime("%d-%b-%y"))
 		self.config(command=self.getdate)
-		self.bind("<Return>",lambda x=self:self.getdate(x))
+		self.bind("<Return>",self.getdate)
 	
 	def getdate(self,event=None):
 		t=getdate(self,inidate=datetime.datetime.strptime(self.cget('text'),"%d-%b-%y"))		
@@ -158,8 +155,4 @@ class Calbutton(Button):
 		return self.cget('text')
 			
 if __name__=="__main__":
-	t=Tk()
-	b=Calbutton(t)
-	b.pack()
-	t.mainloop()
-	
+	print (getdate())

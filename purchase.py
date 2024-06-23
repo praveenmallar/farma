@@ -1,9 +1,8 @@
-from Tkinter import *
-#from mttkinter.mtTkinter import *
+from tkinter import *
 import connectdb as cdb
 import comp
 import calpicker
-import tkMessageBox
+import tkinter.messagebox as tkMessageBox
 import printer as printbill
 import shelve
 import datetime as dt
@@ -14,6 +13,7 @@ class addStock(Frame):
 		if not parent:
 			parent=Toplevel(master)
 		Frame.__init__(self,parent,*args,**kwargs)
+		self.config(bg="#cccccc")
 		self.parent=parent
 		self.master=master
 		self.items=[]
@@ -31,12 +31,12 @@ class addStock(Frame):
 		for row in result:
 			drugs.append(row[1])
 		
-		ftop=Frame(self,bd=1,relief=RAISED,background="cyan")
+		ftop=Frame(self,bd=1,relief=RAISED,background="#cccccc")
 		ftop.pack(side=TOP,fill=X,expand=1)
 		myfont=("Times",10,"bold")
 
 		#frame1 - to select bill details
-		f1=Frame(ftop,bd=1,relief=GROOVE)
+		f1=Frame(ftop,bd=1,relief=GROOVE,bg="#dddddd")
 		Label(f1,text="Stockist",font=myfont).grid(row=0,column=0,sticky=E,padx=4,pady=2)
 		self.stockists=comp.myComp(f1,listitems=stockists,listheight=2,width=14)
 		self.stockists.grid(row=0,column=1,sticky=E+W+N+S,padx=4,pady=2)
@@ -58,7 +58,7 @@ class addStock(Frame):
 		f1.pack(side=TOP)	
 
 		#frame2 - to add stocks
-		f2=Frame(ftop)
+		f2=Frame(ftop,bg="#dddddc")
 		Label(f2,text="Drug",font=myfont).pack(side=LEFT)
 		self.drug=comp.myComp(f2,listitems=drugs,listheight=3,width=14)
 		self.drug.pack(side=LEFT)
@@ -95,7 +95,7 @@ class addStock(Frame):
 		f2.pack(side=TOP)
 
 		#frame3 - bill list
-		f=Frame(self,width=850,height=300)		
+		f=Frame(self,width=850,height=300,bg="#e1e1ef")
 		f.pack(side=LEFT,fill=X,expand=1)
 		sb=Scrollbar(f)
 		sb.pack(side=RIGHT,fill=Y)
@@ -202,32 +202,28 @@ class addStock(Frame):
 					mrp=f.mrp/(1+f.cgst/100+f.sgst/100)
 				else:
 					mrp=f.mrp
-				print mrp
 				disc=f.disc
 				expiry=f.expiry
-				print expiry
 				dsql="select id from drug where name='"+drug+"';"
 				cur.execute(dsql)
 				row=cur.fetchone()
 				drugid=row[0]
-				sql="select sum(stock.cur_count) from stock where stock.drug_id=%s and stock.expiry> curdate();"
-				print "1"
-				cur.execute(sql,[drugid])
+				sql="select sum(stock.cur_count) from stock where stock.drug_id={} and stock.expiry> curdate();"
+				cur.execute(sql.format(drugid))
 				r=cur.fetchone()
 				existing_stock=r[0]
-				sql="select sum(sale.count) from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where bill.date> date_add(curdate(), interval -1 month) and stock.drug_id=%s;"
-				print "2"
-				cur.execute(sql,[drugid])
+				sql="select sum(sale.count) from sale join bill on sale.bill=bill.id join stock on sale.stock=stock.id where bill.date> date_add(curdate(), interval -1 month) and stock.drug_id={};".format(drugid)
+				cur.execute(sql)
 				r=cur.fetchone()
 				lastmonth_sale=r[0]
 				if gstbill==1:
-					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgstp,sgstp, purchase_id,buy_price, discount,terminate,tax) 						values (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0,0)"
-					print "3"
-					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,f.cgst,f.sgst,billid,rate,disc))
+					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price,cgstp,sgstp, purchase_id,buy_price, discount,terminate,tax) 						values ('{}',str_to_date('{}','{}'),{},{},{},{},{},{},{},{},{},0,0)".format(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,f.cgst,f.sgst,billid,rate,disc)
+					print(sql)
+					cur.execute(sql)
 				else:
-					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, discount,terminate) values  (%s,str_to_date(%s,%s),%s,%s,%s,%s,%s,%s,%s,%s,%s,0)"
-					print "4"
-					cur.execute(sql,(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,disc))
+					sql="insert into stock (batch,expiry,start_count,cur_count,drug_id,price, purchase_id,buy_price, discount,terminate) values  ('{}',str_to_date('{}','{}'),{},{},{},{},{},{},{},{},{},0)".format(batch,expiry,'%d-%b-%y',count,count,drugid,mrp,billid,rate,disc)
+					print(sql)
+					cur.execute(sql)
 				billtotal=billtotal+count*rate
 				if gstbill==1:
 					mrp=f.mrp
@@ -236,7 +232,7 @@ class addStock(Frame):
 			printout.append(" ")
 			printout.extend(["net total: "+str(billtotal),"bill total: "+total,"",""])
 			printbill.printinfo(printout)
-			sh=shelve.open("data.db")
+			sh=shelve.open("data")
 			try:
 				curpurchase=float(sh['purchase'])
 			except:
@@ -248,8 +244,8 @@ class addStock(Frame):
 			self.master.restock()
 			self.drug.focus()
 
-		except cdb.mdb.Error,e:
-			tkMessageBox.showerror("Error in database:", "error %d: %s" %(e.args[0],e.args[1]),parent=self.parent)
+		except cdb.mdb.Error as e:
+			tkMessageBox.showerror("Error in database:", "error {}: {}" .format(e.args[0],e.args[1]),parent=self.parent)
 			if db:
 				db.rollback()
 		finally :

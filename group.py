@@ -1,7 +1,7 @@
-from Tkinter import *
+from tkinter import *
 import comp
 import connectdb as cdb
-import tkMessageBox as tmb
+import tkinter.messagebox as tmb
 
 class Group(Frame):
 	def __init__(self,parent=None):
@@ -51,7 +51,7 @@ class Group(Frame):
 		if not index:
 			index=0
 		cur=cdb.Db().connection().cursor()
-		cur.execute("select * from groups order by name;")
+		cur.execute("select * from `groups` order by name;")
 		rows=cur.fetchall()
 		items=[]
 		for r in rows:
@@ -71,8 +71,8 @@ class Group(Frame):
 	def loadgroupdrugs(self,e=None):
 		group=self.groups.get()[1]
 		cur=cdb.Db().connection().cursor()
-		cur.execute("select drug.name,drug.id,druggroup.groupid,groups.name from drug join druggroup on druggroup.drug=drug.id "\
-			" join groups on druggroup.groupid=groups.id where druggroup.groupid=%s;",[group])
+		cur.execute("select drug.name,drug.id,druggroup.groupid,`groups`.name from drug join druggroup on druggroup.drug=drug.id "\
+			" join `groups` on druggroup.groupid=groups.id where druggroup.groupid=%s;",(group))
 		rows=cur.fetchall()
 		items=[]
 		for r in rows:
@@ -106,7 +106,7 @@ class Group(Frame):
 		grp=self.newGroup.get()
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		cur.execute("insert into groups (name) values(%s);",[grp])
+		cur.execute("insert into `groups` (name) values(%s);",(grp))
 		con.commit()
 		self.loadgroups()
 		self.newGroup.set("")
@@ -117,10 +117,10 @@ class Group(Frame):
 			return
 		con=cdb.Db().connection()
 		cur=con.cursor()
-		cur.execute("delete from groups where id=%s;",[grp[1]])
+		cur.execute("delete from `groups` where id=%s;",(grp[1]))
 		con.commit()
 		self.loadgroups()
 
 if __name__=="__main__":
-	g=Group(Tk())
+	g=Group()
 	g.mainloop()

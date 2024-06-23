@@ -1,7 +1,7 @@
-from Tkinter import *
+from tkinter import *
 import connectdb as cdb
 import datetime as dt
-import tkMessageBox
+from tkinter import messagebox as tkMessageBox
 import printer as printbill
 import shelve
 
@@ -9,7 +9,8 @@ import shelve
 class Patient(Frame):
 	def __init__(self,parent=None):
 		if not parent:
-			parent=Toplevel()
+			t=Toplevel()
+			parent = t
 		Frame.__init__(self,parent)
 		b=PatientDetails(self)
 		a=PatientList(self,b)
@@ -38,10 +39,10 @@ def addPatient(ip,name):
 	con=cdb.Db().connection()
 	cur=con.cursor()
 	try:	
-		cur.execute("insert into patient (name) values(%s)",[name])
+		cur.execute("insert into patient (name) values('{}')".format(name))
 		con.commit()
-	except cdb.Error (e):
-		print "error %d : %s" %(e.args[0],e.args[1])
+	except Exception as e:
+		print ("error {}" .format(e))
 		con.rollback()
 	else:
 		return cur.lastrowid
@@ -49,12 +50,12 @@ def addPatient(ip,name):
 def removePatient(id,name,ip):
 	output=[]
 	output.extend(["patient discharged: "+name,"IP: "+ip])
-	sql="update patient set discharged=1 where id=%s;"
+	sql="update patient set discharged=1 where id={};"
 	con=cdb.Db().connection()
 	cur=con.cursor()
-	cur.execute(sql,[id])
-	sql="select bill.id, bill.net, bill.date from bill join credit on bill.id=credit.billid join patient on patient.id=credit.patientid where patient.id=%s"
-	cur.execute(sql,[id])
+	cur.execute(sql.format(id))
+	sql="select bill.id, bill.net, bill.date from bill join credit on bill.id=credit.billid join patient on patient.id=credit.patientid where patient.id={}"
+	cur.execute(sql.format(id))
 	result=cur.fetchall()
 	billtotal=0
 	output.append(" ")
@@ -65,14 +66,13 @@ def removePatient(id,name,ip):
 	output.append("total: "+str(billtotal))
 	printbill.printinfo(output)
 	con.commit()
-	sh=shelve.open("data.db")
+	sh=shelve.open("data")
 	try:
 		dischargetotal=sh['discharge']
 	except:
 		dischargetotal=0
 	dischargetotal+=billtotal
 	sh['discharge']=dischargetotal
-	sh.close()
 	
 class AddPatient(Frame):
 	def __init__(self,parent,patientlist=None,ip="",name=""):
@@ -171,10 +171,10 @@ class PatientDetails(Frame):
 		self.container.delete(ALL)
 		if id is None:
 			return
-		sql="select bill.id as bill, bill.name as patient, bill.date as date, bill.net as amount from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where patient.id=%s;"
+		sql="select bill.id as bill, bill.name as patient, bill.date as date, bill.net as amount from bill join credit on bill.id=credit.billid join patient on credit.patientid=patient.id where patient.id={};"
 		cur=cdb.Db().connection().cursor()
 		try:
-			cur.execute(sql,[id])
+			cur.execute(sql.format(id))
 		except cdb.mdb.Error as e:
 			tkMessageBox.showerror("Error "+str(e.args[0]), e.args[1],parent=self.master)
 			return

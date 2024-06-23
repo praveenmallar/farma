@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-#from mttkinter.mtTkinter import *
-from Tkinter import *
-import bill,purchase,cancel,new,patient,showbills,password,editstock,review,creditnote,group
+from tkinter import *
+import bill,purchase,cancel,new,patient,showbills,password,review,creditnote,group,editstock
 import printer as printbill
 import shelve
 import datetime as dt
-import tkMessageBox
+import tkinter.messagebox as tkMessageBox
 import connectdb as cdb
 from bill import print_day_bills as print_daybills
 
@@ -14,6 +12,7 @@ class Pharma(Tk):
 
 	def __init__(self):
 		Tk.__init__(self)
+		self.config(bg="#dddddd")
 		self.checkdb()
 		self.config(width=600,height=400)
 		self.title("Mukunda Pharmacy")
@@ -56,7 +55,7 @@ class Pharma(Tk):
 
 		self.debug=BooleanVar()
 		self.debug.set(False)
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		try:
 			noprinter=sh['noprinter']
 		except:
@@ -104,7 +103,7 @@ class Pharma(Tk):
 		self.restatus()
 	
 	def restatus(self):
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		ipsale=sh["ipsale"]
 		sale=sh["sale"]
 		self.statusSale.set(int(sale))
@@ -112,15 +111,16 @@ class Pharma(Tk):
 		sh.close()
 		
 	def editstock(self):
-		if not password.askpass():
-			return
-		editstock.EditStock()
-
+		if password.askpass("admin"):
+			editstock.EditStock(admin=1)
+		else:
+			editstock.EditStock(admin=0)
+			
 	def dayreport(self):
 		if not password.askpass():
 			tkMessageBox.showerror("wrong password","try again")
 			return
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		lines=["     DAY REPORT","     "+str(dt.date.today())]
 		try:
 			lastbill=sh['lastbill']
@@ -236,9 +236,10 @@ class Pharma(Tk):
 			review.Review()
 
 	def noprinter(self):
-		if not password.askpass("admin"):
+		if not password.askpass("admin",self):
+			self.debug.set(not self.debug.get())
 			return
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		sh['noprinter']=self.debug.get()
 		sh.close()
 				
@@ -266,7 +267,7 @@ class Pharma(Tk):
 	def print_day_bills_summery (self):
 		if not password.askpass("admin"):
 			return
-		sh=shelve.open("data.db")
+		sh=shelve.open("data")
 		lines=[]
 		myar=sh['bills-yesterday']
 		for l in myar['sale'] :
