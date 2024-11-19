@@ -51,7 +51,6 @@ class CreditNote(Frame):
         else:
             cur = cursor
         sql = "select * from purchase where stockist={} and amount<0 order by id desc;".format(self.stockists.get()[1])
-        print(sql)
         cur.execute(sql)
         rows = cur.fetchall()
         self.canvas.delete(ALL)
@@ -75,8 +74,7 @@ class CreditNote(Frame):
         con.commit()
         self.crnumber.set(0)
         self.cramount.set(0)
-        self.showcredits(cur)
-
+        self.showcredits()
 
 if __name__ == "__main__":
     a = CreditNote()

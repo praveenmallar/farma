@@ -268,12 +268,11 @@ class Review(Frame):
         cur = cdb.Db().connection().cursor()
         if checklow:
             sql = (
-                "select drug.name, sum(stock.cur_count) as cur_count,saletable.sale, purchasetable.stockist from  drug"
-                " join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on"
-                " sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on"                    
-				" drug.id=saletable.drugid join (select drug.id as drugid,stockist.name as stockist, stockist.id as stockistid from drug"
-                "join (select * from stock order by id desc)st on st.drug_id=drug.id join purchase on "
-                "purchase.id=st.purchase_id join"
+                "select drug.name, sum(stock.cur_count) as cur_count, saletable.sale, purchasetable.stockist from  drug "
+                "join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale "
+                "from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on "                    
+				"drug.id=saletable.drugid join (select drug.id as drugid,stockist.name as stockist, stockist.id as stockistid from drug "
+                "join (select * from stock order by id desc) st on st.drug_id=drug.id join purchase on purchase.id=st.purchase_id join "
                 "stockist on purchase.stockist=stockist.id group by drug.id ) purchasetable on drug.id=purchasetable.drugid "
                 "where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
             format = " {:20.20s} {:6.0f} {:6.0f} {:10.10s}"
@@ -314,6 +313,7 @@ class Review(Frame):
             pass
         else:
             sql += " group by drug.id order by drug.name;"
+
         self.fillCanvas(sql, format, tf, tl)
 
     def groupchanged(self, e, g, d):
@@ -427,8 +427,6 @@ class Review(Frame):
         con = cdb.Db().connection()
         cur = con.cursor()
         print(sql)
-        print(fmt)
-        print("")
         try:
             cur.execute(sql)
             rows = cur.fetchall()
