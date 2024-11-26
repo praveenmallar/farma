@@ -66,4 +66,3 @@ def checkdb():
 
 if __name__=="__main__":
 	checkdb()	
-
