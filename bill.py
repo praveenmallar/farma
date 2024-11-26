@@ -313,4 +313,3 @@ def print_day_bills(day):
 if __name__=="__main__":
 	
 	Bill().mainloop()
-
