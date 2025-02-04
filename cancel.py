@@ -126,7 +126,6 @@ class Cancel(Frame):
             self.master.restock()
             if not ip:
                 printbill.printinfo(printout)
-                self.reprint()
                 sh = shelve.open("data")
                 try:
                     billreturn = sh['return']
@@ -141,6 +140,7 @@ class Cancel(Frame):
                 myar['sale'].append([self.curbill, -(returnamount)])
                 sh['bills'] = myar
                 sh.close()
+                self.reprint()
             else:
                 tkMessageBox.showinfo("Bill Updated", "bill print out only if not IP bill", parent=self.parent)
 
@@ -257,7 +257,10 @@ class Cancel(Frame):
             items = []
             for r in rows:
                 price = float(r['price']) - float(r['price']) * float(r['discount']) / 100
-                item = (r["drug"], r["manufacture"], r['batch'], r['qty'], r['expiry'], price * r['qty'])
+                manufacture=r['manufacture']
+                if not manufacture:
+                    manufacture = ""
+                item = (r["drug"], manufacture, r['batch'], r['qty'], r['expiry'], price * r['qty'])
                 items.append(item)
             sql = ("select patient.name from bill join credit on bill.id=credit.billid join patient on "
                    "credit.patientid=patient.id where bill.id={} and patient.discharged=0;").format(
@@ -270,6 +273,7 @@ class Cancel(Frame):
                 ip = f[0]
             biller = {"billno": str(billno) + "  COPY", "patient": patient, "doc": doc, "date": date, "total": total,
                       "items": items, "ip": ip, "cgst": cgst, "sgst": sgst}
+            print(biller.items(),biller.values())
         printbill.printbill(biller['billno'], biller['patient'], biller['doc'], biller['date'], biller['total'],
                             biller['cgst'], biller['sgst'], biller['items'], ip=biller['ip'])
 

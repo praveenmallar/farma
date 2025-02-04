@@ -268,25 +268,19 @@ class Review(Frame):
         cur = cdb.Db().connection().cursor()
         if checklow:
             sql = (
-                "select drug.name, sum(stock.cur_count) as cur_count, saletable.sale, purchasetable.stockist from  drug "
-                "join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale "
-                "from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on "                    
-				"drug.id=saletable.drugid join (select drug.id as drugid,stockist.name as stockist, stockist.id as stockistid from drug "
-                "join (select * from stock order by id desc) st on st.drug_id=drug.id join purchase on purchase.id=st.purchase_id join "
-                "stockist on purchase.stockist=stockist.id group by drug.id ) purchasetable on drug.id=purchasetable.drugid "
-                "where stock.cur_count>0 and stock.cur_count< saletable.sale/6 ")
+                "select drug.name, sum(stock.cur_count) as cur_count, saletable.sale, max(purchasetable.stockist) as stockist from" 
+                " drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid join "
+                " (select drug.id as drugid,stockist.name as stockist, stockist.id as stockistid from drug join stock st on st.drug_id=drug.id join purchase on purchase.id=st.purchase_id join stockist on purchase.stockist=stockist.id group by drug.id,stockist.id order by drugid) purchasetable on drug.id=purchasetable.drugid  "
+                " where stock.cur_count>0 and stock.cur_count< saletable.sale/6 group by drug.id; ")
             format = " {:20.20s} {:6.0f} {:6.0f} {:10.10s}"
             tf = ("drug", "stock", "sale(30d)", "stockist")
             tl = " {:20.20s} {:6.6s} {:6.6s} {:10.10s}".format(*tf)
 
         elif checkslow:
-            sql = (
-                "select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from "
-                " drug join stock on drug.id=stock.drug_id left join (select stock.drug_id as "
-                "drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id "
-                "join bill on bill.id=sale.bill where bill.date>curdate()-interval 30 day group by drugid) saletable "
-                "on drug.id=saletable.drugid where stock.cur_count>0 and stock.cur_count>")
-            "(datediff(expiry,curdate())-50)*saletable.sale/30"
+            sql = ("select drug.name, sum(stock.cur_count) as cur_count,saletable.sale,min(stock.expiry) as expiry from drug join stock on drug.id=stock.drug_id "
+                   "left join (select stock.drug_id as drugid, sum(sale.count) as sale from stock join sale on sale.stock=stock.id join bill on bill.id=sale.bill "
+                   "where bill.date>curdate()-interval 30 day group by drugid) saletable on drug.id=saletable.drugid where stock.cur_count>0 "
+                   "and stock.cur_count>(datediff(expiry,curdate())-50)*saletable.sale/30 group by drug.id;")
             format = " {:20.20s}   {:6.0f}  {:6.0f}    {:%b-%y}"
             tf = ("drug", "stock", "sale", "expiry")
             tl = " {:20.20s}   {:6.6s}  {:6.6s}    {:6.6s}".format(*tf)
@@ -426,7 +420,6 @@ class Review(Frame):
         self.canvas.delete(ALL)
         con = cdb.Db().connection()
         cur = con.cursor()
-        print(sql)
         try:
             cur.execute(sql)
             rows = cur.fetchall()
