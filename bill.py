@@ -252,8 +252,6 @@ class Bill(Frame):
 				cur.execute("update bill set cgst={},sgst={},net={} where id={};".format(cgst,sgst,billtotal,billid))
 			if ip:		
 				cur.execute("insert into credit(patientid,billid) values({},{});".format(patientid,billid))
-			db.commit()
-			printbill.printbill(billid,patient,doc,date,billtotal,cgst,sgst,items,ip=IP,selfbill=selfbill)
 			sh=shelve.open("data")
 			if selfbill==0:			
 				if ip:
@@ -277,7 +275,9 @@ class Bill(Frame):
 				myar[token].append((billid,billtotal+cgst+sgst))
 				sh['bills']=myar
 			sh.close()
-			self.rw.restatus()	
+			db.commit()
+			printbill.printbill(billid, patient, doc, date, billtotal, cgst, sgst, items, ip=IP, selfbill=selfbill)
+			self.rw.restatus()
 			self.items=[]
 			self.refreshcanvas()
 			self.varPatient.set("")
